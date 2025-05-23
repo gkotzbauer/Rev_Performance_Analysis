@@ -58,7 +58,6 @@
             text-align: center;
             transition: all 0.3s ease;
             cursor: pointer;
-            position: relative;
         }
 
         .upload-section:hover {
@@ -409,20 +408,14 @@
         </div>
 
         <div class="analysis-container" id="analysisContainer">
-            <!-- Executive Summary -->
             <div class="section executive-summary">
                 <h2>🎯 Executive Summary - What You Need to Know</h2>
                 <div id="executiveSummary">
-                    <div class="key-metrics" id="keyMetrics">
-                        <!-- Metrics will be populated by JavaScript -->
-                    </div>
-                    <div class="alert alert-success" id="keyInsight">
-                        <!-- Key insight will be populated by JavaScript -->
-                    </div>
+                    <div class="key-metrics" id="keyMetrics"></div>
+                    <div class="alert alert-success" id="keyInsight"></div>
                 </div>
             </div>
 
-            <!-- Performance Overview -->
             <div class="section">
                 <h2>📈 Your Performance at a Glance</h2>
                 <div class="performance-grid">
@@ -435,38 +428,28 @@
                 </div>
             </div>
 
-            <!-- Strategic Recommendations -->
             <div class="section recommendations">
                 <h2>🚀 What You Should Do Next</h2>
-                <div class="action-items" id="actionItems">
-                    <!-- Action items will be populated by JavaScript -->
-                </div>
+                <div class="action-items" id="actionItems"></div>
             </div>
 
-            <!-- Detailed Analysis -->
             <div class="section">
                 <h2>📋 Weekly Performance Details</h2>
                 <div class="table-container">
-                    <table class="data-table" id="detailsTable">
-                        <!-- Table will be populated by JavaScript -->
-                    </table>
+                    <table class="data-table" id="detailsTable"></table>
                 </div>
             </div>
 
-            <!-- Revenue Drivers -->
             <div class="section">
                 <h2>💡 What Drives Your Revenue</h2>
                 <div class="performance-grid">
                     <div class="chart-container">
                         <canvas id="driversChart"></canvas>
                     </div>
-                    <div id="driversInsights">
-                        <!-- Insights will be populated by JavaScript -->
-                    </div>
+                    <div id="driversInsights"></div>
                 </div>
             </div>
 
-            <!-- Export Options -->
             <div class="section export-section">
                 <h2>📄 Export Your Analysis</h2>
                 <p>Download complete results and individual charts for your team</p>
@@ -480,106 +463,81 @@
         </div>
     </div>
 
-    <!-- Debug info -->
-    <div class="debug-info" id="debugInfo">
-        Libraries loading...
-    </div>
+    <div class="debug-info" id="debugInfo">Libraries loading...</div>
 
     <script>
-        // Debug and initialization
-        console.log('Script started');
-        
-        // Check if libraries are loaded
-        window.addEventListener('load', function() {
-            const debugDiv = document.getElementById('debugInfo');
-            const status = [];
-            
-            if (typeof XLSX !== 'undefined') status.push('✓ XLSX loaded');
-            else status.push('✗ XLSX failed');
-            
-            if (typeof Chart !== 'undefined') status.push('✓ Chart.js loaded');
-            else status.push('✗ Chart.js failed');
-            
-            if (typeof _ !== 'undefined') status.push('✓ Lodash loaded');
-            else status.push('✗ Lodash failed');
-            
-            debugDiv.innerHTML = status.join('<br>') + '<br>Click to hide';
-            debugDiv.onclick = () => debugDiv.style.display = 'none';
-            
-            // Hide debug after 3 seconds if all loaded
-            if (status.every(s => s.includes('✓'))) {
-                setTimeout(() => debugDiv.style.display = 'none', 3000);
-            }
-        });
-
-        // Global variables
         let analysisData = null;
         let weeklyResults = null;
         let charts = {};
 
-        // Initialize when DOM is ready
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM loaded, initializing upload handlers');
-            initializeUploadHandlers();
+            console.log('Page loaded');
+            initializeApp();
         });
 
-        function initializeUploadHandlers() {
+        function initializeApp() {
+            checkLibraries();
+            setupEventHandlers();
+        }
+
+        function checkLibraries() {
+            const debugDiv = document.getElementById('debugInfo');
+            const status = [];
+            
+            if (typeof XLSX !== 'undefined') status.push('✓ XLSX');
+            else status.push('✗ XLSX');
+            
+            if (typeof Chart !== 'undefined') status.push('✓ Chart.js');
+            else status.push('✗ Chart.js');
+            
+            if (typeof _ !== 'undefined') status.push('✓ Lodash');
+            else status.push('✗ Lodash');
+            
+            debugDiv.innerHTML = status.join('<br>') + '<br>Click to hide';
+            debugDiv.onclick = () => debugDiv.style.display = 'none';
+            
+            if (status.every(s => s.includes('✓'))) {
+                setTimeout(() => debugDiv.style.display = 'none', 3000);
+            }
+        }
+
+        function setupEventHandlers() {
             const uploadSection = document.getElementById('uploadSection');
             const fileInput = document.getElementById('fileInput');
             
-            if (!uploadSection || !fileInput) {
-                console.error('Upload elements not found');
-                return;
-            }
-
-            // Click handler for upload section
-            uploadSection.addEventListener('click', function(e) {
-                console.log('Upload section clicked');
-                e.preventDefault();
+            uploadSection.addEventListener('click', () => {
+                console.log('Upload clicked');
                 fileInput.click();
             });
 
-            // File input change handler
-            fileInput.addEventListener('change', function(event) {
-                console.log('File input changed', event.target.files);
-                handleFileUpload(event);
-            });
+            fileInput.addEventListener('change', handleFileUpload);
 
-            // Drag and drop handlers
-            uploadSection.addEventListener('dragover', function(e) {
+            uploadSection.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 uploadSection.classList.add('dragover');
             });
 
-            uploadSection.addEventListener('dragleave', function() {
+            uploadSection.addEventListener('dragleave', () => {
                 uploadSection.classList.remove('dragover');
             });
 
-            uploadSection.addEventListener('drop', function(e) {
+            uploadSection.addEventListener('drop', (e) => {
                 e.preventDefault();
                 uploadSection.classList.remove('dragover');
-                const files = e.dataTransfer.files;
-                console.log('Files dropped:', files);
-                if (files.length > 0) {
-                    processFile(files[0]);
+                if (e.dataTransfer.files.length > 0) {
+                    processFile(e.dataTransfer.files[0]);
                 }
             });
-
-            console.log('Upload handlers initialized successfully');
         }
 
         function handleFileUpload(event) {
             const file = event.target.files[0];
-            console.log('File selected:', file);
             if (file) {
                 processFile(file);
             }
         }
 
         async function processFile(file) {
-            console.log('Processing file:', file.name);
-            
-            // Validate file type
             if (!file.name.match(/\.(xlsx|xls)$/i)) {
                 showError('Please select an Excel file (.xlsx or .xls)');
                 return;
@@ -589,20 +547,14 @@
             document.querySelector('.header').style.display = 'none';
             
             try {
-                console.log('Reading Excel file...');
                 const data = await readExcelFile(file);
-                console.log('Data read successfully, rows:', data.length);
-                
-                console.log('Performing analysis...');
                 const analysis = await performAnalysis(data);
-                console.log('Analysis complete');
-                
                 displayResults(analysis);
                 
                 document.getElementById('loadingSection').style.display = 'none';
                 document.getElementById('analysisContainer').style.display = 'block';
             } catch (error) {
-                console.error('Analysis error:', error);
+                console.error('Error:', error);
                 showError('Error processing file: ' + error.message);
                 document.getElementById('loadingSection').style.display = 'none';
                 document.querySelector('.header').style.display = 'block';
@@ -612,23 +564,20 @@
         function readExcelFile(file) {
             return new Promise((resolve, reject) => {
                 if (typeof XLSX === 'undefined') {
-                    reject(new Error('Excel library not loaded. Please refresh the page.'));
+                    reject(new Error('Excel library not loaded'));
                     return;
                 }
 
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     try {
-                        console.log('FileReader loaded, parsing Excel...');
                         const data = new Uint8Array(e.target.result);
                         const workbook = XLSX.read(data, { type: 'array' });
                         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                         const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                        console.log('Excel parsed, data rows:', jsonData.length);
                         resolve(jsonData);
                     } catch (error) {
-                        console.error('Excel parsing error:', error);
-                        reject(new Error('Failed to parse Excel file: ' + error.message));
+                        reject(error);
                     }
                 };
                 reader.onerror = () => reject(new Error('Failed to read file'));
@@ -637,42 +586,20 @@
         }
 
         async function performAnalysis(rawData) {
-            try {
-                // Data cleaning and processing
-                const cleanedData = cleanData(rawData);
-                console.log('Data cleaned, records:', cleanedData.length);
-                
-                const weeklyData = aggregateWeeklyData(cleanedData);
-                console.log('Data aggregated, weeks:', weeklyData.length);
-                
-                // Statistical analysis
-                const trainTestSplit = splitData(weeklyData, 0.8);
-                const model = trainModel(trainTestSplit.train);
-                const predictions = makePredictions(weeklyData, model);
-                
-                // Performance classification
-                const results = classifyPerformance(weeklyData, predictions);
-                
-                // Generate insights
-                const insights = generateInsights(results, weeklyData);
-                
-                return {
-                    weeklyData,
-                    results,
-                    insights,
-                    model
-                };
-            } catch (error) {
-                console.error('Analysis error:', error);
-                throw error;
-            }
+            const cleanedData = cleanData(rawData);
+            const weeklyData = aggregateWeeklyData(cleanedData);
+            const trainTestSplit = splitData(weeklyData, 0.8);
+            const model = trainModel(trainTestSplit.train);
+            const predictions = makePredictions(weeklyData, model);
+            const results = classifyPerformance(weeklyData, predictions);
+            const insights = generateInsights(results, weeklyData);
+            
+            return { weeklyData, results, insights, model };
         }
 
         function cleanData(rawData) {
-            const headers = rawData[0];
             const dataRows = rawData.slice(1);
             const cleanedData = [];
-            
             let currentYear = null, currentWeek = null, currentPayer = null;
             
             for (let i = 0; i < dataRows.length; i++) {
@@ -701,11 +628,7 @@
         }
 
         function aggregateWeeklyData(cleanedData) {
-            if (typeof _ === 'undefined') {
-                throw new Error('Lodash library not loaded');
-            }
-
-            const grouped = _.groupBy(cleanedData, r => `${r.year}-${r.week}`);
+            const grouped = _.groupBy(cleanedData, r => r.year + '-' + r.week);
             
             return Object.entries(grouped).map(([weekKey, records]) => {
                 const totalPayments = _.sumBy(records, 'payments');
@@ -720,9 +643,6 @@
                     totalCharges,
                     totalVisits,
                     avgCollection: _.meanBy(records, 'collection'),
-                    bcbsCharges: _.sumBy(records.filter(r => r.payer === '2-BCBS'), 'charges'),
-                    aetnaCharges: _.sumBy(records.filter(r => r.payer === '17-AETNA'), 'charges'),
-                    selfPayCharges: _.sumBy(records.filter(r => r.payer === '1-SELF PAY'), 'charges'),
                     records
                 };
             }).sort((a, b) => a.weekKey.localeCompare(b.weekKey));
@@ -741,36 +661,14 @@
                 w.totalVisits > 0 ? w.totalPayments / w.totalVisits : 0
             ));
             
-            const avgCollectionRate = _.mean(trainData.map(w => w.avgCollection));
-            
-            // Calculate correlations
-            const payments = trainData.map(w => w.totalPayments);
-            const visits = trainData.map(w => w.totalVisits);
-            const charges = trainData.map(w => w.totalCharges);
-            
-            const visitCorrelation = calculateCorrelation(visits, payments);
-            const chargeCorrelation = calculateCorrelation(charges, payments);
-            
             return {
                 avgPaymentPerVisit,
-                avgCollectionRate,
-                visitCorrelation,
-                chargeCorrelation,
                 type: 'visit-based'
             };
         }
 
         function makePredictions(data, model) {
-            return data.map(week => {
-                switch(model.type) {
-                    case 'visit-based':
-                        return week.totalVisits * model.avgPaymentPerVisit;
-                    case 'charge-based':
-                        return week.totalCharges * model.avgCollectionRate;
-                    default:
-                        return week.totalVisits * model.avgPaymentPerVisit;
-                }
-            });
+            return data.map(week => week.totalVisits * model.avgPaymentPerVisit);
         }
 
         function classifyPerformance(weeklyData, predictions) {
@@ -808,7 +706,23 @@
                 { name: 'Collection Rate', correlation: 0.34, importance: 'Medium' }
             ];
             
-            const recommendations = generateRecommendations(results, weeklyData);
+            const recommendations = {
+                immediate: [
+                    'Focus on visit volume - your primary revenue driver',
+                    'Optimize charge capture processes',
+                    'Review under-performing weeks for improvements'
+                ],
+                strategic: [
+                    'Implement visit-based revenue forecasting',
+                    'Prioritize BCBS and Aetna payer relationships',
+                    'Standardize collection processes'
+                ],
+                operational: [
+                    'Schedule optimization to increase patient volume',
+                    'Staff training on charge documentation',
+                    'Weekly performance monitoring'
+                ]
+            };
             
             return {
                 performance: perfCounts,
@@ -819,46 +733,6 @@
                 recommendations,
                 totalWeeks: results.length
             };
-        }
-
-        function generateRecommendations(results, weeklyData) {
-            const underPerformed = results.filter(r => r.performance === 'Under Performed');
-            const overPerformed = results.filter(r => r.performance === 'Over Performed');
-            
-            const avgVisits = _.meanBy(weeklyData, 'totalVisits');
-            const avgCharges = _.meanBy(weeklyData, 'totalCharges');
-            
-            return {
-                immediate: [
-                    `Focus on visit volume - your primary revenue driver (${avgVisits.toFixed(0)} visits/week average)`,
-                    `Optimize charge capture - strong correlation with revenue ($${avgCharges.toFixed(0)}/week average)`,
-                    `Review ${underPerformed.length} under-performing weeks for process improvements`
-                ],
-                strategic: [
-                    'Implement visit-based revenue forecasting (95% accuracy)',
-                    'Prioritize BCBS and Aetna payer relationships',
-                    'Standardize collection processes from high-performing weeks'
-                ],
-                operational: [
-                    'Schedule optimization to increase patient volume',
-                    'Staff training on charge documentation accuracy',
-                    'Weekly performance monitoring dashboard implementation'
-                ]
-            };
-        }
-
-        function calculateCorrelation(x, y) {
-            const n = x.length;
-            const sumX = _.sum(x);
-            const sumY = _.sum(y);
-            const sumXY = _.sum(x.map((xi, i) => xi * y[i]));
-            const sumX2 = _.sum(x.map(xi => xi * xi));
-            const sumY2 = _.sum(y.map(yi => yi * yi));
-            
-            const numerator = n * sumXY - sumX * sumY;
-            const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
-            
-            return denominator === 0 ? 0 : numerator / denominator;
         }
 
         function displayResults(analysis) {
@@ -873,19 +747,140 @@
         }
 
         function displayExecutiveSummary(insights) {
-            const metricsHtml = `
-                <div class="metric-card">
-                    <div class="metric-value">${insights.totalWeeks}</div>
-                    <div class="metric-label">Weeks Analyzed</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-value">${insights.accuracy}%</div>
-                    <div class="metric-label">Prediction Accuracy</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-value">$${Math.round(insights.avgError).toLocaleString()}</div>
-                    <div class="metric-label">Average Error</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-value">${insights.performance['Under Performed'] || 0}</div>
-                    <div class
+            const metricsHtml = 
+                '<div class="metric-card"><div class="metric-value">' + insights.totalWeeks + '</div><div class="metric-label">Weeks Analyzed</div></div>' +
+                '<div class="metric-card"><div class="metric-value">' + insights.accuracy + '%</div><div class="metric-label">Prediction Accuracy</div></div>' +
+                '<div class="metric-card"><div class="metric-value">$' + Math.round(insights.avgError).toLocaleString() + '</div><div class="metric-label">Average Error</div></div>' +
+                '<div class="metric-card"><div class="metric-value">' + (insights.performance['Under Performed'] || 0) + '</div><div class="metric-label">Weeks Need Attention</div></div>';
+            
+            document.getElementById('keyMetrics').innerHTML = metricsHtml;
+            
+            const keyInsight = '<strong>Key Insight:</strong> Your clinic revenue is ' + insights.accuracy + '% predictable. Visit volume is your primary driver.';
+            document.getElementById('keyInsight').innerHTML = keyInsight;
+        }
+
+        function displayPerformanceCharts(results) {
+            if (typeof Chart === 'undefined') return;
+
+            const perfCounts = _.countBy(results, 'performance');
+            const ctx1 = document.getElementById('performanceChart').getContext('2d');
+            
+            charts.performance = new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(perfCounts),
+                    datasets: [{
+                        data: Object.values(perfCounts),
+                        backgroundColor: ['#dc3545', '#ffc107', '#28a745']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: true, text: 'Weekly Performance Distribution' }
+                    }
+                }
+            });
+            
+            const ctx2 = document.getElementById('trendChart').getContext('2d');
+            charts.trend = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: results.map(r => r.week),
+                    datasets: [{
+                        label: 'Actual Revenue',
+                        data: results.map(r => r.actual),
+                        borderColor: '#667eea'
+                    }, {
+                        label: 'Predicted Revenue',
+                        data: results.map(r => r.predicted),
+                        borderColor: '#28a745',
+                        borderDash: [5, 5]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: true, text: 'Revenue Trend: Actual vs Predicted' }
+                    }
+                }
+            });
+        }
+
+        function displayRecommendations(recommendations) {
+            const html = 
+                '<div class="action-card"><h3>🎯 Immediate Actions</h3><ul class="action-list">' +
+                recommendations.immediate.map(item => '<li>' + item + '</li>').join('') +
+                '</ul></div>' +
+                '<div class="action-card"><h3>🚀 Strategic Initiatives</h3><ul class="action-list">' +
+                recommendations.strategic.map(item => '<li>' + item + '</li>').join('') +
+                '</ul></div>' +
+                '<div class="action-card"><h3>⚙️ Operational Improvements</h3><ul class="action-list">' +
+                recommendations.operational.map(item => '<li>' + item + '</li>').join('') +
+                '</ul></div>';
+            
+            document.getElementById('actionItems').innerHTML = html;
+        }
+
+        function displayDetailsTable(results) {
+            const html = '<thead><tr><th>Week</th><th>Actual Revenue</th><th>Predicted Revenue</th><th>Performance</th></tr></thead><tbody>' +
+                results.map(result => {
+                    const perfClass = result.performance.toLowerCase().replace(' ', '-');
+                    return '<tr><td>' + result.week + '</td><td>$' + result.actual.toLocaleString() + '</td><td>$' + result.predicted.toLocaleString() + '</td><td><span class="performance-' + perfClass + '">' + result.performance + '</span></td></tr>';
+                }).join('') + '</tbody>';
+            
+            document.getElementById('detailsTable').innerHTML = html;
+        }
+
+        function displayDriversAnalysis(drivers) {
+            if (typeof Chart === 'undefined') return;
+
+            const ctx = document.getElementById('driversChart').getContext('2d');
+            charts.drivers = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: drivers.map(d => d.name),
+                    datasets: [{
+                        data: drivers.map(d => d.correlation),
+                        backgroundColor: ['#667eea', '#28a745', '#ffc107', '#dc3545']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        title: { display: true, text: 'Revenue Performance Drivers' }
+                    }
+                }
+            });
+        }
+
+        function exportToExcel() {
+            if (!weeklyResults || typeof XLSX === 'undefined') {
+                alert('Export not available');
+                return;
+            }
+            
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet([
+                ['Week', 'Actual Revenue', 'Predicted Revenue', 'Performance'],
+                ...weeklyResults.map(r => [r.week, r.actual, r.predicted, r.performance])
+            ]);
+            
+            XLSX.utils.book_append_sheet(wb, ws, 'Analysis');
+            XLSX.writeFile(wb, 'healthcare_analysis.xlsx');
+        }
+
+        function exportChart(chartId) {
+            const chartKey = chartId.replace('Chart', '');
+            const chart = charts[chartKey];
+            if (chart) {
+                const link = document.createElement('a');
+                link.download = chartId + '.png';
+                link.href = chart.toBase64Image();
+                link.click();
+            }
+        }
