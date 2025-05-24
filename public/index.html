@@ -540,7 +540,7 @@
                 document.getElementById('analysisContainer').style.display = 'block';
             } catch (error) {
                 console.error('Analysis error:', error);
-                showError('Error processing file. Please check your data format.');
+                showError('Error processing file. Please check your data format. Make sure your Excel file has the required columns: Year, Week, Payer, EM Group, Charges, Collection, Payments, Visits, and Lab Visits.');
                 document.getElementById('loadingSection').style.display = 'none';
                 document.querySelector('.header').style.display = 'block';
             }
@@ -565,30 +565,37 @@
             });
         }
 
-        function performAnalysis(rawData, callback) {
-            try {
-                if (typeof _ === 'undefined') {
-                    callback(new Error('Analysis library not available'));
-                    return;
-                }
+        function performAnalysis(rawData) {
+            return new Promise((resolve, reject) => {
+                try {
+                    if (typeof _ === 'undefined') {
+                        reject(new Error('Analysis library not available'));
+                        return;
+                    }
 
-                var cleanedData = cleanData(rawData);
-                var weeklyData = aggregateWeeklyData(cleanedData);
-                var trainTestSplit = splitData(weeklyData, 0.8);
-                var model = trainModel(trainTestSplit.train);
-                var predictions = makePredictions(weeklyData, model);
-                var results = classifyPerformance(weeklyData, predictions);
-                var insights = generateInsights(results, weeklyData);
-                
-                callback(null, { 
-                    weeklyData: weeklyData, 
-                    results: results, 
-                    insights: insights, 
-                    model: model 
-                });
-            } catch (error) {
-                callback(error);
-            }
+                    var cleanedData = cleanData(rawData);
+                    if (cleanedData.length === 0) {
+                        reject(new Error('No valid data found in the file. Please check the data format.'));
+                        return;
+                    }
+
+                    var weeklyData = aggregateWeeklyData(cleanedData);
+                    var trainTestSplit = splitData(weeklyData, 0.8);
+                    var model = trainModel(trainTestSplit.train);
+                    var predictions = makePredictions(weeklyData, model);
+                    var results = classifyPerformance(weeklyData, predictions);
+                    var insights = generateInsights(results, weeklyData);
+                    
+                    resolve({ 
+                        weeklyData: weeklyData, 
+                        results: results, 
+                        insights: insights, 
+                        model: model 
+                    });
+                } catch (error) {
+                    reject(error);
+                }
+            });
         }
 
         function cleanData(rawData) {
@@ -597,29 +604,26 @@
             var currentYear = null;
             var currentWeek = null;
             var currentPayer = null;
-            
             for (var i = 0; i < dataRows.length; i++) {
                 var row = dataRows[i];
-                
-                if (row[0] && row[0] !== '') currentYear = row[0];
-                if (row[1] && row[1] !== '') currentWeek = row[1];
-                if (row[2] && row[2] !== '') currentPayer = row[2];
-                
+                if (row[0] && row[0] !== '') currentYear = row[0]; // Year
+                if (row[1] && row[1] !== '') currentWeek = row[1]; // Week
+                if (row[2] && row[2] !== '') currentPayer = row[2]; // Payer
                 if (!currentYear || !currentWeek || !currentPayer || !row[3]) continue;
-                
                 cleanedData.push({
-                    year: currentYear,
-                    week: currentWeek,
-                    payer: currentPayer,
-                    emGroup: row[3],
-                    charges: parseFloat(row[7]) || 0,
-                    collection: parseFloat(row[8]) || 0,
-                    payments: parseFloat(row[9]) || 0,
-                    visits: parseInt(row[10]) || 0,
-                    labVisits: parseInt(row[11]) || 0
+                    year: currentYear, // Year
+                    week: currentWeek, // Week
+                    payer: currentPayer, // Payer
+                    emGroup: row[3], // EM Group
+                    percentTotalPayments: parseFloat(row[4]) || 0, // % of Total Payments
+                    avgChartEMWeight: parseFloat(row[5]) || 0, // Avg. Chart E/M Weight
+                    charges: parseFloat(row[6]) || 0, // Charge Amount
+                    collection: parseFloat(row[7]) || 0, // Collection %
+                    payments: parseFloat(row[8]) || 0, // Total Payments
+                    visits: parseInt(row[9]) || 0, // Visit Count
+                    labVisits: parseInt(row[10]) || 0 // Visits with Lab Count
                 });
             }
-            
             return cleanedData;
         }
 
