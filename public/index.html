@@ -401,8 +401,8 @@
             <h1>Healthcare Revenue Performance Analyzer</h1>
             <p>Professional-grade analytics for clinic revenue optimization</p>
             <div class="upload-section" id="uploadSection">
-                <div class="upload-text">📊 Upload Your Weekly Performance Data</div>
-                <div class="upload-subtitle">Drag & drop your Excel file here or click to browse</div>
+                <div class="upload-text" id="uploadText">📊 Upload Your Weekly Performance Data</div>
+                <div class="upload-subtitle" id="uploadSubtitle">Drag & drop your Excel file here or click to browse</div>
                 <input type="file" id="fileInput" accept=".xlsx,.xls" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; opacity: 0; cursor: pointer; z-index: 2;" />
             </div>
         </div>
@@ -481,32 +481,37 @@
         function setupUploadHandlers() {
             var uploadSection = document.getElementById('uploadSection');
             var fileInput = document.getElementById('fileInput');
+            var uploadText = document.getElementById('uploadText');
+            var uploadSubtitle = document.getElementById('uploadSubtitle');
             
-            uploadSection.addEventListener('click', function(e) {
+            // Make the entire upload section clickable
+            uploadSection.onclick = function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 fileInput.click();
-            });
+            };
 
-            fileInput.addEventListener('change', function(event) {
+            // Handle file selection
+            fileInput.onchange = function(event) {
                 if (event.target.files && event.target.files[0]) {
                     handleFileUpload(event.target.files[0]);
                 }
-            });
+            };
 
-            uploadSection.addEventListener('dragover', function(e) {
+            // Handle drag and drop
+            uploadSection.ondragover = function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 uploadSection.classList.add('dragover');
-            });
+            };
 
-            uploadSection.addEventListener('dragleave', function(e) {
+            uploadSection.ondragleave = function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 uploadSection.classList.remove('dragover');
-            });
+            };
 
-            uploadSection.addEventListener('drop', function(e) {
+            uploadSection.ondrop = function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 uploadSection.classList.remove('dragover');
@@ -514,21 +519,25 @@
                 if (files.length > 0) {
                     handleFileUpload(files[0]);
                 }
-            });
+            };
 
-            var uploadText = document.querySelector('.upload-text');
-            uploadText.addEventListener('click', function(e) {
+            // Add direct click handlers for text elements
+            uploadText.onclick = function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 fileInput.click();
-            });
+            };
 
-            var uploadSubtitle = document.querySelector('.upload-subtitle');
-            uploadSubtitle.addEventListener('click', function(e) {
+            uploadSubtitle.onclick = function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 fileInput.click();
-            });
+            };
+
+            // Add visual feedback for clickable elements
+            uploadText.style.cursor = 'pointer';
+            uploadSubtitle.style.cursor = 'pointer';
+            uploadSection.style.cursor = 'pointer';
         }
 
         function handleFileUpload(file) {
