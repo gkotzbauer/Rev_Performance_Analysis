@@ -8,9 +8,21 @@ const morgan = require('morgan');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Security middleware
+// Security middleware with proper CSP configuration
 app.use(helmet({
-  contentSecurityPolicy: false  // Temporarily disable CSP to test functionality
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "cdnjs.cloudflare.com"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"]
+    }
+  }
 }));
 
 // Middleware
@@ -35,11 +47,9 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API endpoint for file processing (if needed for server-side processing)
+// API endpoint for file processing
 app.post('/api/analyze', (req, res) => {
   try {
-    // This endpoint can be used for server-side processing if needed
-    // Currently, all processing is done client-side
     res.json({
       message: 'Analysis endpoint ready',
       clientSideProcessing: true

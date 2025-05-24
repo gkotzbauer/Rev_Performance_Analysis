@@ -469,10 +469,10 @@
                 <h2>📄 Export Your Analysis</h2>
                 <p>Download complete results and individual charts for your team</p>
                 <div class="export-buttons">
-                    <button class="export-btn" onclick="exportToExcel()">📊 Complete Excel Report</button>
-                    <button class="export-btn" onclick="exportChart('performanceChart')">📈 Performance Chart</button>
-                    <button class="export-btn" onclick="exportChart('trendChart')">📉 Trend Analysis</button>
-                    <button class="export-btn" onclick="exportTable()">📋 Data Table</button>
+                    <button class="export-btn" id="exportExcel">📊 Complete Excel Report</button>
+                    <button class="export-btn" id="exportPerformanceChart">📈 Performance Chart</button>
+                    <button class="export-btn" id="exportTrendChart">📉 Trend Analysis</button>
+                    <button class="export-btn" id="exportTable">📋 Data Table</button>
                 </div>
             </div>
         </div>
@@ -486,6 +486,7 @@
         // Initialize the app when the page loads
         window.onload = function() {
             initializeApp();
+            setupExportHandlers();
         };
 
         function initializeApp() {
@@ -1088,6 +1089,13 @@
             alert.textContent = message;
             document.querySelector('.header').appendChild(alert);
             setTimeout(() => alert.remove(), 5000);
+        }
+
+        function setupExportHandlers() {
+            document.getElementById('exportExcel').addEventListener('click', exportToExcel);
+            document.getElementById('exportPerformanceChart').addEventListener('click', () => exportChart('performanceChart'));
+            document.getElementById('exportTrendChart').addEventListener('click', () => exportChart('trendChart'));
+            document.getElementById('exportTable').addEventListener('click', exportTable);
         }
 
         function exportToExcel() {
