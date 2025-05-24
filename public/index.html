@@ -473,6 +473,11 @@
         var weeklyResults = null;
         var charts = {};
 
+        // Initialize the app when the page loads
+        window.onload = function() {
+            initializeApp();
+        };
+
         function initializeApp() {
             setupUploadHandlers();
             console.log('App initialized successfully');
@@ -485,33 +490,33 @@
             var uploadSubtitle = document.getElementById('uploadSubtitle');
             
             // Make the entire upload section clickable
-            uploadSection.onclick = function(e) {
+            uploadSection.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 fileInput.click();
-            };
+            });
 
             // Handle file selection
-            fileInput.onchange = function(event) {
+            fileInput.addEventListener('change', function(event) {
                 if (event.target.files && event.target.files[0]) {
                     handleFileUpload(event.target.files[0]);
                 }
-            };
+            });
 
             // Handle drag and drop
-            uploadSection.ondragover = function(e) {
+            uploadSection.addEventListener('dragover', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 uploadSection.classList.add('dragover');
-            };
+            });
 
-            uploadSection.ondragleave = function(e) {
+            uploadSection.addEventListener('dragleave', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 uploadSection.classList.remove('dragover');
-            };
+            });
 
-            uploadSection.ondrop = function(e) {
+            uploadSection.addEventListener('drop', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 uploadSection.classList.remove('dragover');
@@ -519,20 +524,20 @@
                 if (files.length > 0) {
                     handleFileUpload(files[0]);
                 }
-            };
+            });
 
             // Add direct click handlers for text elements
-            uploadText.onclick = function(e) {
+            uploadText.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 fileInput.click();
-            };
+            });
 
-            uploadSubtitle.onclick = function(e) {
+            uploadSubtitle.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 fileInput.click();
-            };
+            });
 
             // Add visual feedback for clickable elements
             uploadText.style.cursor = 'pointer';
@@ -1273,14 +1278,6 @@
             console.error('Global error:', event.error);
             showError('An unexpected error occurred. Please refresh and try again.');
         });
-
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeApp();
-        });
-
-        if (document.readyState !== 'loading') {
-            initializeApp();
-        }
     </script>
 </body>
 </html>
