@@ -401,9 +401,9 @@
             <h1>Healthcare Revenue Performance Analyzer</h1>
             <p>Professional-grade analytics for clinic revenue optimization</p>
             <div class="upload-section" id="uploadSection">
-                <div class="upload-text" id="uploadText">📊 Upload Your Weekly Performance Data</div>
-                <div class="upload-subtitle" id="uploadSubtitle">Drag & drop your Excel file here or click to browse</div>
-                <input type="file" id="fileInput" accept=".xlsx,.xls" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; opacity: 0; cursor: pointer; z-index: 2;" />
+                <div class="upload-text">📊 Upload Your Weekly Performance Data</div>
+                <div class="upload-subtitle">Drag & drop your Excel file here or click to browse</div>
+                <input type="file" id="fileInput" accept=".xlsx,.xls" />
             </div>
         </div>
 
@@ -416,8 +416,12 @@
             <div class="section executive-summary">
                 <h2>🎯 Executive Summary - What You Need to Know</h2>
                 <div id="executiveSummary">
-                    <div class="key-metrics" id="keyMetrics"></div>
-                    <div class="alert alert-success" id="keyInsight"></div>
+                    <div class="key-metrics" id="keyMetrics">
+                        <!-- Metrics will be populated by JavaScript -->
+                    </div>
+                    <div class="alert alert-success" id="keyInsight">
+                        <!-- Key insight will be populated by JavaScript -->
+                    </div>
                 </div>
             </div>
 
@@ -435,13 +439,17 @@
 
             <div class="section recommendations">
                 <h2>🚀 What You Should Do Next</h2>
-                <div class="action-items" id="actionItems"></div>
+                <div class="action-items" id="actionItems">
+                    <!-- Action items will be populated by JavaScript -->
+                </div>
             </div>
 
             <div class="section">
                 <h2>📋 Weekly Performance Details</h2>
                 <div class="table-container">
-                    <table class="data-table" id="detailsTable"></table>
+                    <table class="data-table" id="detailsTable">
+                        <!-- Table will be populated by JavaScript -->
+                    </table>
                 </div>
             </div>
 
@@ -451,7 +459,9 @@
                     <div class="chart-container">
                         <canvas id="driversChart"></canvas>
                     </div>
-                    <div id="driversInsights"></div>
+                    <div id="driversInsights">
+                        <!-- Insights will be populated by JavaScript -->
+                    </div>
                 </div>
             </div>
 
@@ -479,135 +489,79 @@
         };
 
         function initializeApp() {
-            setupUploadHandlers();
-            console.log('App initialized successfully');
-        }
+            // File upload handling
+            const uploadSection = document.getElementById('uploadSection');
+            const fileInput = document.getElementById('fileInput');
 
-        function setupUploadHandlers() {
-            var uploadSection = document.getElementById('uploadSection');
-            var fileInput = document.getElementById('fileInput');
-            var uploadText = document.getElementById('uploadText');
-            var uploadSubtitle = document.getElementById('uploadSubtitle');
-            
-            // Make the entire upload section clickable
-            uploadSection.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
+            uploadSection.addEventListener('click', () => {
                 fileInput.click();
             });
 
-            // Handle file selection
-            fileInput.addEventListener('change', function(event) {
-                if (event.target.files && event.target.files[0]) {
-                    handleFileUpload(event.target.files[0]);
-                }
-            });
+            fileInput.addEventListener('change', handleFileUpload);
 
-            // Handle drag and drop
-            uploadSection.addEventListener('dragover', function(e) {
+            // Drag and drop handling
+            uploadSection.addEventListener('dragover', (e) => {
                 e.preventDefault();
-                e.stopPropagation();
                 uploadSection.classList.add('dragover');
             });
 
-            uploadSection.addEventListener('dragleave', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
+            uploadSection.addEventListener('dragleave', () => {
                 uploadSection.classList.remove('dragover');
             });
 
-            uploadSection.addEventListener('drop', function(e) {
+            uploadSection.addEventListener('drop', (e) => {
                 e.preventDefault();
-                e.stopPropagation();
                 uploadSection.classList.remove('dragover');
-                var files = e.dataTransfer.files;
+                const files = e.dataTransfer.files;
                 if (files.length > 0) {
-                    handleFileUpload(files[0]);
+                    processFile(files[0]);
                 }
             });
-
-            // Add direct click handlers for text elements
-            uploadText.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                fileInput.click();
-            });
-
-            uploadSubtitle.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                fileInput.click();
-            });
-
-            // Add visual feedback for clickable elements
-            uploadText.style.cursor = 'pointer';
-            uploadSubtitle.style.cursor = 'pointer';
-            uploadSection.style.cursor = 'pointer';
         }
 
-        function handleFileUpload(file) {
-            var fileName = file.name.toLowerCase();
-            var isExcelFile = fileName.indexOf('.xlsx') !== -1 || fileName.indexOf('.xls') !== -1;
-            
-            if (!isExcelFile) {
-                showError('Please select an Excel file (.xlsx or .xls)');
-                return;
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                processFile(file);
             }
+        }
 
+        async function processFile(file) {
             document.getElementById('loadingSection').style.display = 'block';
             document.querySelector('.header').style.display = 'none';
             
-            processFile(file);
-        }
-
-        function processFile(file) {
-            readExcelFile(file, function(error, data) {
-                if (error) {
-                    console.error('Processing error:', error);
-                    showError('Error processing file: ' + error.message);
-                    document.getElementById('loadingSection').style.display = 'none';
-                    document.querySelector('.header').style.display = 'block';
-                    return;
-                }
+            try {
+                const data = await readExcelFile(file);
+                const analysis = await performAnalysis(data);
+                displayResults(analysis);
                 
-                performAnalysis(data, function(analysisError, analysis) {
-                    if (analysisError) {
-                        console.error('Analysis error:', analysisError);
-                        showError('Error analyzing data: ' + analysisError.message);
-                        document.getElementById('loadingSection').style.display = 'none';
-                        document.querySelector('.header').style.display = 'block';
-                        return;
-                    }
-                    
-                    displayResults(analysis);
-                    document.getElementById('loadingSection').style.display = 'none';
-                    document.getElementById('analysisContainer').style.display = 'block';
-                });
-            });
+                document.getElementById('loadingSection').style.display = 'none';
+                document.getElementById('analysisContainer').style.display = 'block';
+            } catch (error) {
+                console.error('Analysis error:', error);
+                showError('Error processing file. Please check your data format.');
+                document.getElementById('loadingSection').style.display = 'none';
+                document.querySelector('.header').style.display = 'block';
+            }
         }
 
-        function readExcelFile(file, callback) {
-            if (typeof XLSX === 'undefined') {
-                callback(new Error('Excel library not available'));
-                return;
-            }
-
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    var data = new Uint8Array(e.target.result);
-                    var workbook = XLSX.read(data, { type: 'array' });
-                    var worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                    var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                    callback(null, jsonData);
-                } catch (error) {
-                    callback(new Error('Failed to parse Excel file'));
-                }
-            };
-            reader.onerror = function() {
-                callback(new Error('Failed to read file'));
-            };
-            reader.readAsArrayBuffer(file);
+        function readExcelFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                        resolve(jsonData);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            });
         }
 
         function performAnalysis(rawData, callback) {
@@ -1129,13 +1083,11 @@
         }
 
         function showError(message) {
-            var errorHtml = '<div class="alert alert-danger">' + message + '</div>';
-            document.querySelector('.header').insertAdjacentHTML('beforeend', errorHtml);
-            
-            setTimeout(function() {
-                var errorAlert = document.querySelector('.alert-danger');
-                if (errorAlert) errorAlert.remove();
-            }, 5000);
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-danger';
+            alert.textContent = message;
+            document.querySelector('.header').appendChild(alert);
+            setTimeout(() => alert.remove(), 5000);
         }
 
         function exportToExcel() {
