@@ -601,27 +601,29 @@
         function cleanData(rawData) {
             var dataRows = rawData.slice(1);
             var cleanedData = [];
-            var currentYear = null;
             var currentWeek = null;
             var currentPayer = null;
             for (var i = 0; i < dataRows.length; i++) {
                 var row = dataRows[i];
-                if (row[0] && row[0] !== '') currentYear = row[0]; // Year
-                if (row[1] && row[1] !== '') currentWeek = row[1]; // Week
-                if (row[2] && row[2] !== '') currentPayer = row[2]; // Payer
-                if (!currentYear || !currentWeek || !currentPayer || !row[3]) continue;
+                // Fill down merged cells for Week (col 0) and Payer (col 1)
+                if (row[0] && row[0] !== '') currentWeek = row[0];
+                else row[0] = currentWeek;
+                if (row[1] && row[1] !== '') currentPayer = row[1];
+                else row[1] = currentPayer;
+                // Only process rows with both Week and Payer filled, and EM Group present
+                if (!row[0] || !row[1] || !row[2]) continue;
                 cleanedData.push({
-                    year: currentYear, // Year
-                    week: currentWeek, // Week
-                    payer: currentPayer, // Payer
-                    emGroup: row[3], // EM Group
-                    percentTotalPayments: parseFloat(row[4]) || 0, // % of Total Payments
+                    week: row[0], // Week
+                    payer: row[1], // Payer
+                    emGroup: row[2], // EM Group
+                    percentTotalPayments: parseFloat(row[3]) || 0, // % of Total Payments
+                    avgPaymentPerVisit: parseFloat(row[4]) || 0, // Avg. Payment Per Visit
                     avgChartEMWeight: parseFloat(row[5]) || 0, // Avg. Chart E/M Weight
                     charges: parseFloat(row[6]) || 0, // Charge Amount
-                    collection: parseFloat(row[7]) || 0, // Collection %
+                    collection: parseFloat(String(row[7]).replace('%',''))/100 || 0, // Collection % as decimal
                     payments: parseFloat(row[8]) || 0, // Total Payments
                     visits: parseInt(row[9]) || 0, // Visit Count
-                    labVisits: parseInt(row[10]) || 0 // Visits with Lab Count
+                    labVisits: parseInt(row[10]) || 0 // Visits With Lab Count
                 });
             }
             return cleanedData;
