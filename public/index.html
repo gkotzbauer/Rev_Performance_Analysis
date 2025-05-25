@@ -599,6 +599,7 @@
         }
 
         function cleanData(rawData) {
+            console.log("Excel header row:", rawData[0]);
             var dataRows = rawData.slice(1);
             var cleanedData = [];
             var currentYear = null;
