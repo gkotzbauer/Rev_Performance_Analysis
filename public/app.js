@@ -5,61 +5,97 @@ let charts = {};
 
 // Initialize the app when the page loads
 document.addEventListener('DOMContentLoaded', function() {
-    // Wait for all external libraries to load
-    if (typeof Chart === 'undefined' || typeof _ === 'undefined' || typeof XLSX === 'undefined') {
-        setTimeout(() => {
-            initializeApp();
-            setupExportHandlers();
-            checkInitialState();
-        }, 1000);
-    } else {
-        initializeApp();
-        setupExportHandlers();
-        checkInitialState();
+    console.log('DOM loaded, checking libraries...');
+    
+    // Function to check if libraries are loaded
+    function checkLibraries() {
+        return typeof Chart !== 'undefined' && typeof _ !== 'undefined' && typeof XLSX !== 'undefined';
     }
+    
+    // Wait for all external libraries to load with retry mechanism
+    function initializeWhenReady(retries = 0) {
+        if (checkLibraries()) {
+            console.log('All libraries loaded, initializing app...');
+            try {
+                initializeApp();
+                setupExportHandlers();
+                checkInitialState();
+            } catch (error) {
+                console.error('Error during initialization:', error);
+                showError('Failed to initialize application: ' + error.message);
+            }
+        } else if (retries < 10) {
+            console.log(`Libraries not ready, retrying... (${retries + 1}/10)`);
+            setTimeout(() => initializeWhenReady(retries + 1), 500);
+        } else {
+            console.error('Libraries failed to load after 10 retries');
+            showError('Failed to load required libraries. Please refresh the page.');
+        }
+    }
+    
+    initializeWhenReady();
 });
 
 function initializeApp() {
+    console.log('Initializing app...');
+    
     try {
-        // File upload handling
+        // Get DOM elements
         const uploadSection = document.getElementById('uploadSection');
         const fileInput = document.getElementById('fileInput');
 
-        if (!uploadSection || !fileInput) {
-            console.error('Upload elements not found');
-            return;
+        if (!uploadSection) {
+            throw new Error('Upload section element not found');
+        }
+        
+        if (!fileInput) {
+            throw new Error('File input element not found');
         }
 
-        uploadSection.addEventListener('click', () => {
+        // File upload click handler
+        uploadSection.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Upload section clicked');
             fileInput.click();
         });
 
-        fileInput.addEventListener('change', (event) => {
-            if (event.target.files.length > 0) {
-                processFile(event.target.files[0]);
+        // File selection handler
+        fileInput.addEventListener('change', function(event) {
+            console.log('File input changed');
+            const files = event.target.files;
+            if (files && files.length > 0) {
+                console.log('File selected:', files[0].name);
+                processFile(files[0]);
             }
         });
 
-        // Drag and drop handling
-        uploadSection.addEventListener('dragover', (e) => {
+        // Drag and drop handlers
+        uploadSection.addEventListener('dragover', function(e) {
             e.preventDefault();
+            e.stopPropagation();
             uploadSection.classList.add('dragover');
         });
 
-        uploadSection.addEventListener('dragleave', () => {
+        uploadSection.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
             uploadSection.classList.remove('dragover');
         });
 
-        uploadSection.addEventListener('drop', (e) => {
+        uploadSection.addEventListener('drop', function(e) {
             e.preventDefault();
+            e.stopPropagation();
             uploadSection.classList.remove('dragover');
+            
             const files = e.dataTransfer.files;
-            if (files.length > 0) {
+            if (files && files.length > 0) {
+                console.log('File dropped:', files[0].name);
                 processFile(files[0]);
             }
         });
 
         console.log('App initialized successfully');
+        
     } catch (error) {
         console.error('Error initializing app:', error);
         showError('Failed to initialize application: ' + error.message);
@@ -547,6 +583,8 @@ function showError(message) {
 }
 
 function setupExportHandlers() {
+    console.log('Setting up export handlers...');
+    
     try {
         const exportExcel = document.getElementById('exportExcel');
         const exportPerformanceChart = document.getElementById('exportPerformanceChart');
@@ -554,17 +592,39 @@ function setupExportHandlers() {
         const exportTable = document.getElementById('exportTable');
 
         if (exportExcel) {
-            exportExcel.addEventListener('click', exportToExcel);
+            exportExcel.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Export Excel clicked');
+                exportToExcel();
+            });
         }
+        
         if (exportPerformanceChart) {
-            exportPerformanceChart.addEventListener('click', () => exportChart('performanceChart'));
+            exportPerformanceChart.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Export Performance Chart clicked');
+                exportChart('performanceChart');
+            });
         }
+        
         if (exportTrendChart) {
-            exportTrendChart.addEventListener('click', () => exportChart('trendChart'));
+            exportTrendChart.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Export Trend Chart clicked');
+                exportChart('trendChart');
+            });
         }
+        
         if (exportTable) {
-            exportTable.addEventListener('click', exportTable);
+            exportTable.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Export Table clicked');
+                exportTableData();
+            });
         }
+        
+        console.log('Export handlers set up successfully');
+        
     } catch (error) {
         console.error('Error setting up export handlers:', error);
     }
