@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
 from werkzeug.utils import secure_filename
-from analyze_revenue import load_and_prepare_data, train_model, generate_insights
+from analyze_revenue import load_and_prepare_data, train_model, generate_insights, NumpyEncoder
 import json
 import logging
 import traceback
@@ -85,7 +85,7 @@ def run_analysis():
         logger.info(f"Saving insights to: {insights_path}")
         try:
             with open(insights_path, 'w') as f:
-                json.dump(insights, f)
+                json.dump(insights, f, cls=NumpyEncoder)
         except Exception as e:
             logger.error(f"Error saving insights: {str(e)}", exc_info=True)
             return jsonify({'error': f'Error saving results: {str(e)}'}), 500

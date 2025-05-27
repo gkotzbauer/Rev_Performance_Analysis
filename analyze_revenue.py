@@ -8,6 +8,16 @@ import seaborn as sns
 import json
 import os
 
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NumpyEncoder, self).default(obj)
+
 def load_and_prepare_data(file_path):
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Input file not found: {file_path}")
@@ -147,38 +157,4 @@ def generate_insights(model, df_encoded, original_df, scaler, feature_names):
         }
     }
     
-    return insights
-
-def main():
-    try:
-        # File paths
-        input_file = "public/Weekly Performance Analsysis Export '24 & '24 W019.xlsx"
-        output_file = "public/Revenue_Performance_Analysis_Results.xlsx"
-        
-        # Ensure output directory exists
-        os.makedirs(os.path.dirname(output_file), exist_ok=True)
-        
-        # Load and prepare data
-        df_encoded, original_df = load_and_prepare_data(input_file)
-        
-        # Train model
-        model, X_train_scaled, X_test_scaled, y_train, y_test, scaler, feature_names = train_model(df_encoded)
-        
-        # Generate insights
-        insights = generate_insights(model, df_encoded, original_df, scaler, feature_names)
-        
-        # Save results to Excel
-        with pd.ExcelWriter(output_file) as writer:
-            pd.DataFrame(insights['performance']).to_excel(writer, sheet_name='Performance Analysis', index=False)
-            pd.DataFrame(insights['feature_importance']).to_excel(writer, sheet_name='Feature Importance', index=False)
-        
-        # Save insights as JSON for HTML interface
-        with open('public/analysis_insights.json', 'w') as f:
-            json.dump(insights, f)
-            
-    except Exception as e:
-        print(f"Error in main: {str(e)}")
-        raise
-
-if __name__ == "__main__":
-    main() 
+    return insights 
