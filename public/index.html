@@ -525,35 +525,44 @@
             document.querySelector('.header').style.display = 'none';
             
             try {
+                console.log('Processing file:', file.name);
+                
                 // Create FormData object
                 const formData = new FormData();
                 formData.append('file', file);
                 
                 // Run Python analysis
+                console.log('Sending file to server...');
                 const response = await fetch('/run_analysis', {
                     method: 'POST',
                     body: formData
                 });
                 
+                const responseData = await response.json();
+                console.log('Server response:', responseData);
+                
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Analysis failed');
+                    console.error('Server error:', responseData);
+                    throw new Error(responseData.error || 'Analysis failed');
                 }
                 
+                console.log('Analysis complete, loading insights...');
                 // Load insights from JSON file
                 const insightsResponse = await fetch('/analysis_insights.json');
                 if (!insightsResponse.ok) {
-                    throw new Error('Failed to load analysis results');
+                    console.error('Failed to load insights:', insightsResponse.status);
+                    throw new Error(`Failed to load analysis results: ${insightsResponse.statusText}`);
                 }
                 
                 const insights = await insightsResponse.json();
+                console.log('Insights loaded:', insights);
                 displayResults(insights);
                 
                 document.getElementById('loadingSection').style.display = 'none';
                 document.getElementById('analysisContainer').style.display = 'block';
             } catch (error) {
                 console.error('Analysis error:', error);
-                showError('Error processing file: ' + error.message);
+                showError(error.message || 'An unexpected error occurred. Please check the console for details.');
                 document.getElementById('loadingSection').style.display = 'none';
                 document.querySelector('.header').style.display = 'block';
             }
@@ -828,11 +837,12 @@
         }
 
         function showError(message) {
+            console.error('Error:', message);
             const alert = document.createElement('div');
             alert.className = 'alert alert-danger';
-            alert.textContent = message;
+            alert.innerHTML = `<strong>Error:</strong> ${message}`;
             document.querySelector('.header').appendChild(alert);
-            setTimeout(() => alert.remove(), 5000);
+            setTimeout(() => alert.remove(), 10000); // Keep error visible for 10 seconds
         }
 
         function setupExportHandlers() {
@@ -978,9 +988,10 @@
             }
         }
 
+        // Add global error handler
         window.addEventListener('error', function(event) {
             console.error('Global error:', event.error);
-            showError('An unexpected error occurred. Please refresh and try again.');
+            showError(`An unexpected error occurred: ${event.error?.message || 'Unknown error'}`);
         });
     </script>
 </body>

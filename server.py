@@ -3,6 +3,15 @@ import os
 from werkzeug.utils import secure_filename
 from analyze_revenue import load_and_prepare_data, train_model, generate_insights
 import json
+import logging
+import traceback
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__, static_folder='public')
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -17,41 +26,79 @@ def index():
 
 @app.route('/run_analysis', methods=['POST'])
 def run_analysis():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file provided'}), 400
-    
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No file selected'}), 400
-    
-    if not file.filename.endswith('.xlsx'):
-        return jsonify({'error': 'Only Excel files are supported'}), 400
-    
-    # Save the uploaded file
-    filename = secure_filename(file.filename)
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    file.save(filepath)
-    
+    filepath = None
     try:
+        if 'file' not in request.files:
+            logger.error("No file in request")
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            logger.error("Empty filename")
+            return jsonify({'error': 'No file selected'}), 400
+        
+        if not file.filename.endswith('.xlsx'):
+            logger.error(f"Invalid file type: {file.filename}")
+            return jsonify({'error': 'Only Excel files are supported'}), 400
+        
+        # Save the uploaded file
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        logger.info(f"Saving file to: {filepath}")
+        file.save(filepath)
+        
+        if not os.path.exists(filepath):
+            logger.error(f"File not saved successfully: {filepath}")
+            return jsonify({'error': 'Failed to save file'}), 500
+        
         # Run the analysis
-        df_encoded, original_df = load_and_prepare_data(filepath)
-        model, X_train_scaled, X_test_scaled, y_train, y_test, scaler, feature_names = train_model(df_encoded)
-        insights = generate_insights(model, df_encoded, original_df, scaler, feature_names)
+        logger.info("Starting data preparation")
+        try:
+            df_encoded, original_df = load_and_prepare_data(filepath)
+        except Exception as e:
+            logger.error(f"Error in data preparation: {str(e)}", exc_info=True)
+            return jsonify({'error': f'Error preparing data: {str(e)}'}), 500
+        
+        logger.info("Training model")
+        try:
+            model, X_train_scaled, X_test_scaled, y_train, y_test, scaler, feature_names = train_model(df_encoded)
+        except Exception as e:
+            logger.error(f"Error in model training: {str(e)}", exc_info=True)
+            return jsonify({'error': f'Error training model: {str(e)}'}), 500
+        
+        logger.info("Generating insights")
+        try:
+            insights = generate_insights(model, df_encoded, original_df, scaler, feature_names)
+        except Exception as e:
+            logger.error(f"Error generating insights: {str(e)}", exc_info=True)
+            return jsonify({'error': f'Error generating insights: {str(e)}'}), 500
         
         # Save insights to JSON file
-        with open('public/analysis_insights.json', 'w') as f:
-            json.dump(insights, f)
+        insights_path = os.path.join('public', 'analysis_insights.json')
+        logger.info(f"Saving insights to: {insights_path}")
+        try:
+            with open(insights_path, 'w') as f:
+                json.dump(insights, f)
+        except Exception as e:
+            logger.error(f"Error saving insights: {str(e)}", exc_info=True)
+            return jsonify({'error': f'Error saving results: {str(e)}'}), 500
         
         return jsonify({'success': True})
     
     except Exception as e:
-        print(f"Error during analysis: {str(e)}")  # Add logging
+        error_msg = f"Unexpected error: {str(e)}\n{traceback.format_exc()}"
+        logger.error(error_msg)
         return jsonify({'error': str(e)}), 500
     
     finally:
         # Clean up the uploaded file
-        if os.path.exists(filepath):
-            os.remove(filepath)
+        if filepath and os.path.exists(filepath):
+            logger.info(f"Cleaning up file: {filepath}")
+            try:
+                os.remove(filepath)
+            except Exception as e:
+                logger.error(f"Error cleaning up file: {str(e)}")
 
 if __name__ == '__main__':
+    logger.info("Starting server...")
     app.run(debug=True, port=5000) 
