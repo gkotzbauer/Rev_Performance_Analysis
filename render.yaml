@@ -13,6 +13,10 @@ services:
         value: /opt/render/project/src/public
       - key: MAX_CONTENT_LENGTH
         value: "16777216"  # 16MB in bytes
+      - key: NODE_OPTIONS
+        value: "--max-old-space-size=512"
+      - key: LOG_LEVEL
+        value: "debug"
     healthCheckPath: /health
     autoDeploy: true
     disk:
