@@ -499,7 +499,11 @@
                 fileInput.click();
             });
 
-            fileInput.addEventListener('change', handleFileUpload);
+            fileInput.addEventListener('change', (event) => {
+                if (event.target.files.length > 0) {
+                    processFile(event.target.files[0]);
+                }
+            });
 
             // Drag and drop handling
             uploadSection.addEventListener('dragover', (e) => {
