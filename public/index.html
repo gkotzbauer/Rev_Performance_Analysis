@@ -4,21 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self';">
-    <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <meta http-equiv="X-Frame-Options" content="DENY">
-    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <title>Healthcare Revenue Performance Analyzer</title>
     
-    <!-- Load scripts in proper order without defer to avoid race conditions -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" 
-            integrity="sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAIwUeLh28qJa/3q7QdQ+1ICm7UDcPFQ+hBQ==" 
-            crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js" 
-            integrity="sha512-ElRFoEQdI5Ht6kZvyzXhYG9NqjtkmlkfYk0wr6wHxU9JEHakS7UJZNeml5ALk+8IKlU6jDgMabC3vkumRokgA==" 
-            crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js" 
-            integrity="sha512-WFN04846sdKMIP5LKNphMaWzU7YOpBLCi74EOpBLdI5Ht6kZvyYxhYG9NqjtkmlkfYk0wr6wHxU9JEHakS7UJZNeml5ALk+8IKlU6jDgMabC3vkumRokgA==" 
-            crossorigin="anonymous"></script>
+    <!-- Load external libraries first -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js" crossorigin="anonymous"></script>
     
     <style>
         * {
@@ -54,7 +45,6 @@
             background: linear-gradient(45deg, #667eea, #764ba2);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            background-clip: text;
             margin-bottom: 10px;
         }
 
@@ -73,7 +63,6 @@
             transition: all 0.3s ease;
             cursor: pointer;
             position: relative;
-            z-index: 1;
         }
 
         .upload-section:hover {
@@ -94,40 +83,22 @@
             color: #667eea;
             margin-bottom: 10px;
             font-weight: 600;
-            cursor: pointer;
-            transition: color 0.3s ease;
-        }
-
-        .upload-text:hover {
-            color: #764ba2;
         }
 
         .upload-subtitle {
             color: #666;
             font-size: 1em;
-            cursor: pointer;
-            transition: color 0.3s ease;
-        }
-
-        .upload-subtitle:hover {
-            color: #764ba2;
         }
 
         #fileInput {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            opacity: 0;
-            cursor: pointer;
-            z-index: 2;
+            display: none;
         }
 
         .loading {
             text-align: center;
             padding: 40px;
             color: #667eea;
+            display: none;
         }
 
         .loading-spinner {
@@ -409,95 +380,95 @@
     </style>
 </head>
 <body>
-    <div class="container" role="main">
-        <header class="header" role="banner">
+    <div class="container">
+        <header class="header">
             <h1>Healthcare Revenue Performance Analyzer</h1>
             <p>Professional-grade analytics for clinic revenue optimization</p>
-            <div class="upload-section" id="uploadSection" role="region" aria-label="File Upload Area">
-                <div class="upload-text" role="heading" aria-level="2">📊 Upload Your Weekly Performance Data</div>
+            <div class="upload-section" id="uploadSection">
+                <div class="upload-text">📊 Upload Your Weekly Performance Data</div>
                 <div class="upload-subtitle">Drag & drop your Excel file here or click to browse</div>
-                <input type="file" id="fileInput" accept=".xlsx,.xls" aria-label="Select Excel file" />
+                <input type="file" id="fileInput" accept=".xlsx,.xls" />
             </div>
         </header>
 
-        <div class="loading" id="loadingSection" role="status" aria-live="polite" hidden>
-            <div class="loading-spinner" role="progressbar" aria-label="Loading"></div>
+        <div class="loading" id="loadingSection">
+            <div class="loading-spinner"></div>
             <div>Analyzing your revenue data...</div>
         </div>
 
-        <div class="analysis-container" id="analysisContainer" role="region" aria-label="Analysis Results">
+        <div class="analysis-container" id="analysisContainer">
             <!-- Executive Summary Section -->
-            <section class="section executive-summary" role="region" aria-label="Executive Summary">
+            <section class="section executive-summary">
                 <h2>🎯 Executive Summary - What You Need to Know</h2>
                 <div id="executiveSummary">
-                    <div class="key-metrics" id="keyMetrics" role="list" aria-label="Key Metrics">
+                    <div class="key-metrics" id="keyMetrics">
                         <!-- Metrics will be populated by JavaScript -->
                     </div>
-                    <div class="alert alert-success" id="keyInsight" role="alert">
+                    <div class="alert alert-success" id="keyInsight">
                         <!-- Key insight will be populated by JavaScript -->
                     </div>
                 </div>
             </section>
 
             <!-- Performance Section -->
-            <section class="section" role="region" aria-label="Performance Overview">
+            <section class="section">
                 <h2>📈 Your Performance at a Glance</h2>
                 <div class="performance-grid">
-                    <div class="chart-container" role="img" aria-label="Performance Distribution Chart">
+                    <div class="chart-container">
                         <canvas id="performanceChart"></canvas>
                     </div>
-                    <div class="chart-container" role="img" aria-label="Revenue Trend Chart">
+                    <div class="chart-container">
                         <canvas id="trendChart"></canvas>
                     </div>
                 </div>
             </section>
 
             <!-- Recommendations Section -->
-            <section class="section recommendations" role="region" aria-label="Recommendations">
+            <section class="section recommendations">
                 <h2>🚀 What You Should Do Next</h2>
-                <div class="action-items" id="actionItems" role="list">
+                <div class="action-items" id="actionItems">
                     <!-- Action items will be populated by JavaScript -->
                 </div>
             </section>
 
             <!-- Details Section -->
-            <section class="section" role="region" aria-label="Performance Details">
+            <section class="section">
                 <h2>📋 Weekly Performance Details</h2>
-                <div class="table-container" role="region" aria-label="Performance Table">
-                    <table class="data-table" id="detailsTable" role="grid">
+                <div class="table-container">
+                    <table class="data-table" id="detailsTable">
                         <!-- Table will be populated by JavaScript -->
                     </table>
                 </div>
             </section>
 
             <!-- Drivers Section -->
-            <section class="section" role="region" aria-label="Revenue Drivers">
+            <section class="section">
                 <h2>💡 What Drives Your Revenue</h2>
                 <div class="performance-grid">
-                    <div class="chart-container" role="img" aria-label="Revenue Drivers Chart">
+                    <div class="chart-container">
                         <canvas id="driversChart"></canvas>
                     </div>
-                    <div id="driversInsights" role="region" aria-label="Driver Insights">
+                    <div id="driversInsights">
                         <!-- Insights will be populated by JavaScript -->
                     </div>
                 </div>
             </section>
 
             <!-- Export Section -->
-            <section class="section export-section" role="region" aria-label="Export Options">
+            <section class="section export-section">
                 <h2>📄 Export Your Analysis</h2>
                 <p>Download complete results and individual charts for your team</p>
-                <div class="export-buttons" role="group" aria-label="Export Options">
-                    <button class="export-btn" id="exportExcel" aria-label="Export to Excel">📊 Complete Excel Report</button>
-                    <button class="export-btn" id="exportPerformanceChart" aria-label="Export Performance Chart">📈 Performance Chart</button>
-                    <button class="export-btn" id="exportTrendChart" aria-label="Export Trend Chart">📉 Trend Analysis</button>
-                    <button class="export-btn" id="exportTable" aria-label="Export Data Table">📋 Data Table</button>
+                <div class="export-buttons">
+                    <button class="export-btn" id="exportExcel">📊 Complete Excel Report</button>
+                    <button class="export-btn" id="exportPerformanceChart">📈 Performance Chart</button>
+                    <button class="export-btn" id="exportTrendChart">📉 Trend Analysis</button>
+                    <button class="export-btn" id="exportTable">📋 Data Table</button>
                 </div>
             </section>
         </div>
     </div>
 
-    <!-- Load the main JavaScript file -->
+    <!-- Load the main JavaScript file last -->
     <script src="app.js"></script>
 </body>
 </html>
