@@ -10,7 +10,7 @@ services:
       - key: UPLOAD_FOLDER
         value: /opt/render/uploads
       - key: PUBLIC_FOLDER
-        value: /opt/render/public
+        value: /opt/render/project/src/public
       - key: MAX_CONTENT_LENGTH
         value: "16777216"  # 16MB in bytes
     healthCheckPath: /health
