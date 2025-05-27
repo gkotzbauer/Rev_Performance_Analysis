@@ -3,10 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self';">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <title>Healthcare Revenue Performance Analyzer</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" as="script" crossorigin="anonymous">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js" as="script" crossorigin="anonymous">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js" as="script" crossorigin="anonymous">
+    
+    <!-- Load scripts with integrity checks -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" 
+            integrity="sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAIwUeLh28qJa/3q7QdQ+1ICm7UDPR7m0YQ==" 
+            crossorigin="anonymous" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js" 
+            integrity="sha512-ElRFoEQdI5Ht6kZvyzXhYG9NqjtkmlkfYk0wr6wHxU9JEHakS8UJZNeml5ALk+8IKlU6jDgMabC3vkumRokg==" 
+            crossorigin="anonymous" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js" 
+            integrity="sha512-WFN04846sdKMIP5LKNphMaWzU7EOpBLCiWF9aSNNqZvAAoexi8raWMq7nwpdYbR1cKxpX6wq6h5O5wzU8COyA==" 
+            crossorigin="anonymous" defer></script>
+    
+    <!-- Load styles -->
+    <link rel="stylesheet" href="styles.css">
     <style>
         * {
             margin: 0;
@@ -396,624 +416,95 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
+    <div class="container" role="main">
+        <header class="header" role="banner">
             <h1>Healthcare Revenue Performance Analyzer</h1>
             <p>Professional-grade analytics for clinic revenue optimization</p>
-            <div class="upload-section" id="uploadSection">
-                <div class="upload-text">📊 Upload Your Weekly Performance Data</div>
+            <div class="upload-section" id="uploadSection" role="region" aria-label="File Upload Area">
+                <div class="upload-text" role="heading" aria-level="2">📊 Upload Your Weekly Performance Data</div>
                 <div class="upload-subtitle">Drag & drop your Excel file here or click to browse</div>
-                <input type="file" id="fileInput" accept=".xlsx,.xls" />
+                <input type="file" id="fileInput" accept=".xlsx,.xls" aria-label="Select Excel file" />
             </div>
-        </div>
+        </header>
 
-        <div class="loading" id="loadingSection">
-            <div class="loading-spinner"></div>
+        <div class="loading" id="loadingSection" role="status" aria-live="polite" hidden>
+            <div class="loading-spinner" role="progressbar" aria-label="Loading"></div>
             <div>Analyzing your revenue data...</div>
         </div>
 
-        <div class="analysis-container" id="analysisContainer">
-            <div class="section executive-summary">
+        <div class="analysis-container" id="analysisContainer" role="region" aria-label="Analysis Results" hidden>
+            <!-- Executive Summary Section -->
+            <section class="section executive-summary" role="region" aria-label="Executive Summary">
                 <h2>🎯 Executive Summary - What You Need to Know</h2>
                 <div id="executiveSummary">
-                    <div class="key-metrics" id="keyMetrics">
+                    <div class="key-metrics" id="keyMetrics" role="list" aria-label="Key Metrics">
                         <!-- Metrics will be populated by JavaScript -->
                     </div>
-                    <div class="alert alert-success" id="keyInsight">
+                    <div class="alert alert-success" id="keyInsight" role="alert">
                         <!-- Key insight will be populated by JavaScript -->
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <div class="section">
+            <!-- Performance Section -->
+            <section class="section" role="region" aria-label="Performance Overview">
                 <h2>📈 Your Performance at a Glance</h2>
                 <div class="performance-grid">
-                    <div class="chart-container">
+                    <div class="chart-container" role="img" aria-label="Performance Distribution Chart">
                         <canvas id="performanceChart"></canvas>
                     </div>
-                    <div class="chart-container">
+                    <div class="chart-container" role="img" aria-label="Revenue Trend Chart">
                         <canvas id="trendChart"></canvas>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <div class="section recommendations">
+            <!-- Recommendations Section -->
+            <section class="section recommendations" role="region" aria-label="Recommendations">
                 <h2>🚀 What You Should Do Next</h2>
-                <div class="action-items" id="actionItems">
+                <div class="action-items" id="actionItems" role="list">
                     <!-- Action items will be populated by JavaScript -->
                 </div>
-            </div>
+            </section>
 
-            <div class="section">
+            <!-- Details Section -->
+            <section class="section" role="region" aria-label="Performance Details">
                 <h2>📋 Weekly Performance Details</h2>
-                <div class="table-container">
-                    <table class="data-table" id="detailsTable">
+                <div class="table-container" role="region" aria-label="Performance Table">
+                    <table class="data-table" id="detailsTable" role="grid">
                         <!-- Table will be populated by JavaScript -->
                     </table>
                 </div>
-            </div>
+            </section>
 
-            <div class="section">
+            <!-- Drivers Section -->
+            <section class="section" role="region" aria-label="Revenue Drivers">
                 <h2>💡 What Drives Your Revenue</h2>
                 <div class="performance-grid">
-                    <div class="chart-container">
+                    <div class="chart-container" role="img" aria-label="Revenue Drivers Chart">
                         <canvas id="driversChart"></canvas>
                     </div>
-                    <div id="driversInsights">
+                    <div id="driversInsights" role="region" aria-label="Driver Insights">
                         <!-- Insights will be populated by JavaScript -->
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <div class="section export-section">
+            <!-- Export Section -->
+            <section class="section export-section" role="region" aria-label="Export Options">
                 <h2>📄 Export Your Analysis</h2>
                 <p>Download complete results and individual charts for your team</p>
-                <div class="export-buttons">
-                    <button class="export-btn" id="exportExcel">📊 Complete Excel Report</button>
-                    <button class="export-btn" id="exportPerformanceChart">📈 Performance Chart</button>
-                    <button class="export-btn" id="exportTrendChart">📉 Trend Analysis</button>
-                    <button class="export-btn" id="exportTable">📋 Data Table</button>
+                <div class="export-buttons" role="group" aria-label="Export Options">
+                    <button class="export-btn" id="exportExcel" aria-label="Export to Excel">📊 Complete Excel Report</button>
+                    <button class="export-btn" id="exportPerformanceChart" aria-label="Export Performance Chart">📈 Performance Chart</button>
+                    <button class="export-btn" id="exportTrendChart" aria-label="Export Trend Chart">📉 Trend Analysis</button>
+                    <button class="export-btn" id="exportTable" aria-label="Export Data Table">📋 Data Table</button>
                 </div>
-            </div>
+            </section>
         </div>
     </div>
 
-    <script>
-        var analysisData = null;
-        var weeklyResults = null;
-        var charts = {};
-
-        // Initialize the app when the page loads
-        window.onload = function() {
-            initializeApp();
-            setupExportHandlers();
-            checkInitialState();
-        };
-
-        function initializeApp() {
-            // File upload handling
-            const uploadSection = document.getElementById('uploadSection');
-            const fileInput = document.getElementById('fileInput');
-
-            uploadSection.addEventListener('click', () => {
-                fileInput.click();
-            });
-
-            fileInput.addEventListener('change', (event) => {
-                if (event.target.files.length > 0) {
-                    processFile(event.target.files[0]);
-                }
-            });
-
-            // Drag and drop handling
-            uploadSection.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadSection.classList.add('dragover');
-            });
-
-            uploadSection.addEventListener('dragleave', () => {
-                uploadSection.classList.remove('dragover');
-            });
-
-            uploadSection.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadSection.classList.remove('dragover');
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    processFile(files[0]);
-                }
-            });
-        }
-
-        async function processFile(file) {
-            document.getElementById('loadingSection').style.display = 'block';
-            document.querySelector('.header').style.display = 'none';
-            document.getElementById('analysisContainer').style.display = 'none';
-            
-            try {
-                console.log('Processing file:', file.name);
-                
-                // Create FormData object
-                const formData = new FormData();
-                formData.append('file', file);
-                
-                // Run Python analysis
-                console.log('Sending file to server...');
-                const response = await fetch('/run_analysis', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const responseData = await response.json();
-                console.log('Server response:', responseData);
-                
-                if (!response.ok) {
-                    console.error('Server error:', responseData);
-                    throw new Error(responseData.error || 'Analysis failed');
-                }
-                
-                console.log('Analysis complete, loading insights...');
-                // Load insights from JSON file
-                const insightsResponse = await fetch('/analysis_insights.json');
-                if (!insightsResponse.ok) {
-                    console.error('Failed to load insights:', insightsResponse.status);
-                    throw new Error(`Failed to load analysis results: ${insightsResponse.statusText}`);
-                }
-                
-                const insights = await insightsResponse.json();
-                console.log('Insights loaded:', insights);
-                displayResults(insights);
-                
-                document.getElementById('loadingSection').style.display = 'none';
-                document.getElementById('analysisContainer').style.display = 'block';
-            } catch (error) {
-                console.error('Analysis error:', error);
-                showError(error.message || 'An unexpected error occurred. Please check the console for details.');
-                document.getElementById('loadingSection').style.display = 'none';
-                document.querySelector('.header').style.display = 'block';
-            }
-        }
-
-        function displayResults(insights) {
-            displayExecutiveSummary(insights);
-            displayPerformanceCharts(insights);
-            displayRecommendations(insights);
-            displayDetailsTable(insights);
-            displayDriversAnalysis(insights);
-        }
-
-        function displayExecutiveSummary(insights) {
-            const performance = insights.performance;
-            const totalWeeks = performance.length;
-            const underPerformed = performance.filter(p => p.Performance === 'Under Performed').length;
-            const avgError = performance.reduce((sum, p) => sum + p['Absolute Error'], 0) / totalWeeks;
-            const accuracy = ((1 - avgError / performance.reduce((sum, p) => sum + p.Actual, 0) / totalWeeks) * 100).toFixed(1);
-            
-            var metricsHtml = 
-                '<div class="metric-card">' +
-                    '<div class="metric-value">' + totalWeeks + '</div>' +
-                    '<div class="metric-label">Weeks Analyzed</div>' +
-                '</div>' +
-                '<div class="metric-card">' +
-                    '<div class="metric-value">' + accuracy + '%</div>' +
-                    '<div class="metric-label">Prediction Accuracy</div>' +
-                '</div>' +
-                '<div class="metric-card">' +
-                    '<div class="metric-value">$' + Math.round(avgError).toLocaleString() + '</div>' +
-                    '<div class="metric-label">Average Error</div>' +
-                '</div>' +
-                '<div class="metric-card">' +
-                    '<div class="metric-value">' + underPerformed + '</div>' +
-                    '<div class="metric-label">Weeks Need Attention</div>' +
-                '</div>';
-            
-            document.getElementById('keyMetrics').innerHTML = metricsHtml;
-            
-            var keyInsight = '<strong>Key Insight:</strong> Your clinic revenue is ' + accuracy + '% predictable. ' +
-                'Visit volume is your primary driver - focus on scheduling optimization to address the ' +
-                underPerformed + ' under-performing weeks.';
-            
-            document.getElementById('keyInsight').innerHTML = keyInsight;
-        }
-
-        function displayPerformanceCharts(insights) {
-            const performance = insights.performance;
-            
-            // Performance Distribution Chart
-            const perfCounts = _.countBy(performance, 'Performance');
-            const ctx1 = document.getElementById('performanceChart').getContext('2d');
-            
-            charts.performance = new Chart(ctx1, {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(perfCounts),
-                    datasets: [{
-                        data: Object.values(perfCounts),
-                        backgroundColor: ['#dc3545', '#ffc107', '#28a745'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Weekly Performance Distribution'
-                        },
-                        legend: {
-                            position: 'bottom'
-                        }
-                    }
-                }
-            });
-            
-            // Trend Chart
-            const ctx2 = document.getElementById('trendChart').getContext('2d');
-            
-            charts.trend = new Chart(ctx2, {
-                type: 'line',
-                data: {
-                    labels: performance.map(p => p.Week),
-                    datasets: [{
-                        label: 'Actual Revenue',
-                        data: performance.map(p => p.Actual),
-                        borderColor: '#667eea',
-                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                        tension: 0.4
-                    }, {
-                        label: 'Predicted Revenue',
-                        data: performance.map(p => p.Predicted),
-                        borderColor: '#28a745',
-                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                        borderDash: [5, 5],
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Revenue Trend: Actual vs Predicted'
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return '$' + value.toLocaleString();
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        function displayRecommendations(insights) {
-            const performance = insights.performance;
-            const underPerformed = performance.filter(p => p.Performance === 'Under Performed');
-            const avgVisits = performance.reduce((sum, p) => sum + p.Actual, 0) / performance.length;
-            
-            const recommendations = {
-                immediate: [
-                    'Focus on visit volume - your primary revenue driver (' + Math.round(avgVisits) + ' visits per week average)',
-                    'Optimize charge capture - strong correlation with revenue',
-                    'Review ' + underPerformed.length + ' under-performing weeks for process improvements'
-                ],
-                strategic: [
-                    'Implement visit-based revenue forecasting (95% accuracy)',
-                    'Prioritize BCBS and Aetna payer relationships',
-                    'Standardize collection processes from high-performing weeks'
-                ],
-                operational: [
-                    'Schedule optimization to increase patient volume',
-                    'Staff training on charge documentation accuracy',
-                    'Weekly performance monitoring dashboard implementation'
-                ]
-            };
-            
-            var html = '';
-            
-            html += '<div class="action-card">' +
-                '<h3>🎯 Immediate Actions (Next 30 Days)</h3>' +
-                '<ul class="action-list">';
-            
-            for (var i = 0; i < recommendations.immediate.length; i++) {
-                html += '<li>' + recommendations.immediate[i] + '</li>';
-            }
-            
-            html += '</ul></div>';
-            
-            html += '<div class="action-card">' +
-                '<h3>🚀 Strategic Initiatives (90 Days)</h3>' +
-                '<ul class="action-list">';
-            
-            for (var i = 0; i < recommendations.strategic.length; i++) {
-                html += '<li>' + recommendations.strategic[i] + '</li>';
-            }
-            
-            html += '</ul></div>';
-            
-            html += '<div class="action-card">' +
-                '<h3>⚙️ Operational Improvements</h3>' +
-                '<ul class="action-list">';
-            
-            for (var i = 0; i < recommendations.operational.length; i++) {
-                html += '<li>' + recommendations.operational[i] + '</li>';
-            }
-            
-            html += '</ul></div>';
-            
-            document.getElementById('actionItems').innerHTML = html;
-        }
-
-        function displayDetailsTable(insights) {
-            const performance = insights.performance;
-            
-            var tableRows = '';
-            for (var i = 0; i < performance.length; i++) {
-                var result = performance[i];
-                var performanceClass = result.Performance === 'Under Performed' ? 'performance-under' :
-                                     result.Performance === 'Over Performed' ? 'performance-over' :
-                                     'performance-average';
-                
-                tableRows += '<tr>' +
-                    '<td>' + result.Week + '</td>' +
-                    '<td>' + result.Actual.toLocaleString() + '</td>' +
-                    '<td>' + result.Predicted.toLocaleString() + '</td>' +
-                    '<td>' + result['Error %'] + '%</td>' +
-                    '<td><span class="' + performanceClass + '">' + result.Performance + '</span></td>' +
-                    '<td>' + getKeyIssues(result) + '</td>' +
-                    '<td>' + getActionsNeeded(result) + '</td>' +
-                '</tr>';
-            }
-
-            var html = '<thead>' +
-                '<tr>' +
-                    '<th>Week</th>' +
-                    '<th>Actual Revenue</th>' +
-                    '<th>Predicted Revenue</th>' +
-                    '<th>Error %</th>' +
-                    '<th>Performance</th>' +
-                    '<th>Key Issues</th>' +
-                    '<th>Actions Needed</th>' +
-                '</tr>' +
-            '</thead>' +
-            '<tbody>' + tableRows + '</tbody>';
-            
-            document.getElementById('detailsTable').innerHTML = html;
-        }
-
-        function displayDriversAnalysis(insights) {
-            const featureImportance = insights.feature_importance;
-            
-            const ctx = document.getElementById('driversChart').getContext('2d');
-            
-            charts.drivers = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: featureImportance.slice(0, 4).map(f => f.Feature),
-                    datasets: [{
-                        label: 'Feature Importance',
-                        data: featureImportance.slice(0, 4).map(f => f.Importance),
-                        backgroundColor: ['#667eea', '#28a745', '#ffc107', '#dc3545'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Revenue Drivers Analysis'
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 1,
-                            ticks: {
-                                callback: function(value) {
-                                    return (value * 100).toFixed(0) + '%';
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-
-            var insightsHtml = '<div style="padding: 20px; background: #f8f9fa; border-radius: 15px;">' +
-                '<h3 style="color: #2c3e50; margin-bottom: 15px;">Key Revenue Drivers</h3>';
-            
-            featureImportance.slice(0, 4).forEach(feature => {
-                insightsHtml += '<div style="margin-bottom: 10px; padding: 10px; background: white; border-radius: 8px;">' +
-                    '<strong>' + feature.Feature + '</strong><br>' +
-                    '<span style="color: #666;">Importance: ' + (feature.Importance * 100).toFixed(1) + '%</span>' +
-                '</div>';
-            });
-            
-            insightsHtml += '</div>';
-            
-            document.getElementById('driversInsights').innerHTML = insightsHtml;
-        }
-
-        function showError(message) {
-            console.error('Error:', message);
-            const alert = document.createElement('div');
-            alert.className = 'alert alert-danger';
-            alert.innerHTML = `<strong>Error:</strong> ${message}`;
-            document.querySelector('.header').appendChild(alert);
-            setTimeout(() => alert.remove(), 10000); // Keep error visible for 10 seconds
-        }
-
-        function setupExportHandlers() {
-            document.getElementById('exportExcel').addEventListener('click', exportToExcel);
-            document.getElementById('exportPerformanceChart').addEventListener('click', () => exportChart('performanceChart'));
-            document.getElementById('exportTrendChart').addEventListener('click', () => exportChart('trendChart'));
-            document.getElementById('exportTable').addEventListener('click', exportTable);
-        }
-
-        function exportToExcel() {
-            if (!weeklyResults || typeof XLSX === 'undefined') {
-                showError('No data available for export or Excel library not loaded');
-                return;
-            }
-
-            try {
-                var wb = XLSX.utils.book_new();
-                
-                var summaryData = [
-                    ['Healthcare Revenue Analysis Report'],
-                    ['Generated:', new Date().toLocaleDateString()],
-                    [''],
-                    ['Total Weeks Analyzed:', analysisData.insights.totalWeeks],
-                    ['Prediction Accuracy:', analysisData.insights.accuracy + '%'],
-                    ['Average Error:', '$' + Math.round(analysisData.insights.avgError).toLocaleString()],
-                    ['Under Performing Weeks:', analysisData.insights.performance['Under Performed'] || 0],
-                    ['Over Performing Weeks:', analysisData.insights.performance['Over Performed'] || 0],
-                    ['Average Performing Weeks:', analysisData.insights.performance['Average Performance'] || 0]
-                ];
-                
-                var summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
-                XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
-                
-                var detailsData = [
-                    ['Week', 'Actual Revenue', 'Predicted Revenue', 'Error %', 'Performance', 'Total Visits', 'Total Charges']
-                ];
-                
-                for (var i = 0; i < weeklyResults.length; i++) {
-                    var result = weeklyResults[i];
-                    detailsData.push([
-                        result.week,
-                        result.actual,
-                        result.predicted,
-                        (result.error * 100).toFixed(2),
-                        result.performance,
-                        result.totalVisits,
-                        result.totalCharges
-                    ]);
-                }
-                
-                var detailsWs = XLSX.utils.aoa_to_sheet(detailsData);
-                XLSX.utils.book_append_sheet(wb, detailsWs, 'Weekly Details');
-                
-                var recommendationsData = [
-                    ['Recommendations'],
-                    [''],
-                    ['IMMEDIATE ACTIONS (Next 30 Days)']
-                ];
-                
-                for (var i = 0; i < analysisData.insights.recommendations.immediate.length; i++) {
-                    recommendationsData.push([analysisData.insights.recommendations.immediate[i]]);
-                }
-                
-                recommendationsData.push(['']);
-                recommendationsData.push(['STRATEGIC INITIATIVES (90 Days)']);
-                
-                for (var i = 0; i < analysisData.insights.recommendations.strategic.length; i++) {
-                    recommendationsData.push([analysisData.insights.recommendations.strategic[i]]);
-                }
-                
-                recommendationsData.push(['']);
-                recommendationsData.push(['OPERATIONAL IMPROVEMENTS']);
-                
-                for (var i = 0; i < analysisData.insights.recommendations.operational.length; i++) {
-                    recommendationsData.push([analysisData.insights.recommendations.operational[i]]);
-                }
-                
-                var recommendationsWs = XLSX.utils.aoa_to_sheet(recommendationsData);
-                XLSX.utils.book_append_sheet(wb, recommendationsWs, 'Recommendations');
-                
-                XLSX.writeFile(wb, 'Healthcare_Revenue_Analysis_Report.xlsx');
-                
-            } catch (error) {
-                console.error('Export error:', error);
-                showError('Failed to export Excel file: ' + error.message);
-            }
-        }
-
-        function exportChart(chartId) {
-            var chartKey = chartId.replace('Chart', '');
-            if (!charts[chartKey]) {
-                showError('Chart not available for export');
-                return;
-            }
-
-            try {
-                var canvas = document.getElementById(chartId);
-                var url = canvas.toDataURL('image/png');
-                
-                var link = document.createElement('a');
-                link.download = chartId + '_chart.png';
-                link.href = url;
-                link.click();
-                
-            } catch (error) {
-                console.error('Chart export error:', error);
-                showError('Failed to export chart: ' + error.message);
-            }
-        }
-
-        function exportTable() {
-            if (!weeklyResults) {
-                showError('No data available for export');
-                return;
-            }
-
-            try {
-                var csvContent = "data:text/csv;charset=utf-8," + 
-                    "Week,Actual Revenue,Predicted Revenue,Error %,Performance,Total Visits,Total Charges\n";
-                
-                for (var i = 0; i < weeklyResults.length; i++) {
-                    var result = weeklyResults[i];
-                    csvContent += [
-                        result.week,
-                        result.actual,
-                        result.predicted,
-                        (result.error * 100).toFixed(2),
-                        result.performance,
-                        result.totalVisits,
-                        result.totalCharges
-                    ].join(',') + '\n';
-                }
-
-                var encodedUri = encodeURI(csvContent);
-                var link = document.createElement('a');
-                link.setAttribute('href', encodedUri);
-                link.setAttribute('download', 'revenue_analysis_data.csv');
-                link.click();
-                
-            } catch (error) {
-                console.error('Table export error:', error);
-                showError('Failed to export table: ' + error.message);
-            }
-        }
-
-        // Add global error handler
-        window.addEventListener('error', function(event) {
-            console.error('Global error:', event.error);
-            showError(`An unexpected error occurred: ${event.error?.message || 'Unknown error'}`);
-        });
-
-        async function checkInitialState() {
-            try {
-                const response = await fetch('/analysis_insights.json');
-                if (response.ok) {
-                    const insights = await response.json();
-                    displayResults(insights);
-                    document.getElementById('analysisContainer').style.display = 'block';
-                } else {
-                    console.log('No previous analysis found');
-                }
-            } catch (error) {
-                console.log('No previous analysis found:', error);
-            }
-        }
-    </script>
+    <!-- Load JavaScript -->
+    <script src="app.js" defer></script>
 </body>
 </html>
