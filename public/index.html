@@ -9,24 +9,17 @@
     <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <title>Healthcare Revenue Performance Analyzer</title>
     
-    <!-- Preload critical resources -->
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" as="script" crossorigin="anonymous">
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js" as="script" crossorigin="anonymous">
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js" as="script" crossorigin="anonymous">
-    
-    <!-- Load scripts with integrity checks -->
+    <!-- Load scripts in proper order without defer to avoid race conditions -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" 
-            integrity="sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAIwUeLh28qJa/3q7QdQ+1ICm7UDPR7m0YQ==" 
-            crossorigin="anonymous" defer></script>
+            integrity="sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAIwUeLh28qJa/3q7QdQ+1ICm7UDcPFQ+hBQ==" 
+            crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js" 
-            integrity="sha512-ElRFoEQdI5Ht6kZvyzXhYG9NqjtkmlkfYk0wr6wHxU9JEHakS8UJZNeml5ALk+8IKlU6jDgMabC3vkumRokg==" 
-            crossorigin="anonymous" defer></script>
+            integrity="sha512-ElRFoEQdI5Ht6kZvyzXhYG9NqjtkmlkfYk0wr6wHxU9JEHakS7UJZNeml5ALk+8IKlU6jDgMabC3vkumRokgA==" 
+            crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js" 
-            integrity="sha512-WFN04846sdKMIP5LKNphMaWzU7EOpBLCiWF9aSNNqZvAAoexi8raWMq7nwpdYbR1cKxpX6wq6h5O5wzU8COyA==" 
-            crossorigin="anonymous" defer></script>
+            integrity="sha512-WFN04846sdKMIP5LKNphMaWzU7YOpBLCi74EOpBLdI5Ht6kZvyYxhYG9NqjtkmlkfYk0wr6wHxU9JEHakS7UJZNeml5ALk+8IKlU6jDgMabC3vkumRokgA==" 
+            crossorigin="anonymous"></script>
     
-    <!-- Load styles -->
-    <link rel="stylesheet" href="styles.css">
     <style>
         * {
             margin: 0;
@@ -61,6 +54,7 @@
             background: linear-gradient(45deg, #667eea, #764ba2);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
             margin-bottom: 10px;
         }
 
@@ -131,7 +125,6 @@
         }
 
         .loading {
-            display: none;
             text-align: center;
             padding: 40px;
             color: #667eea;
@@ -432,7 +425,7 @@
             <div>Analyzing your revenue data...</div>
         </div>
 
-        <div class="analysis-container" id="analysisContainer" role="region" aria-label="Analysis Results" hidden>
+        <div class="analysis-container" id="analysisContainer" role="region" aria-label="Analysis Results">
             <!-- Executive Summary Section -->
             <section class="section executive-summary" role="region" aria-label="Executive Summary">
                 <h2>🎯 Executive Summary - What You Need to Know</h2>
@@ -504,7 +497,7 @@
         </div>
     </div>
 
-    <!-- Load JavaScript -->
-    <script src="app.js" defer></script>
+    <!-- Load the main JavaScript file -->
+    <script src="app.js"></script>
 </body>
 </html>
