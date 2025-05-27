@@ -520,356 +520,93 @@
             });
         }
 
-        function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (file) {
-                processFile(file);
-            }
-        }
-
         async function processFile(file) {
             document.getElementById('loadingSection').style.display = 'block';
             document.querySelector('.header').style.display = 'none';
             
             try {
-                const data = await readExcelFile(file);
-                const analysis = await performAnalysis(data);
-                displayResults(analysis);
+                // Create FormData object
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                // Run Python analysis
+                const response = await fetch('/run_analysis', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Analysis failed');
+                }
+                
+                // Load insights from JSON file
+                const insightsResponse = await fetch('/analysis_insights.json');
+                if (!insightsResponse.ok) {
+                    throw new Error('Failed to load analysis results');
+                }
+                
+                const insights = await insightsResponse.json();
+                displayResults(insights);
                 
                 document.getElementById('loadingSection').style.display = 'none';
                 document.getElementById('analysisContainer').style.display = 'block';
             } catch (error) {
                 console.error('Analysis error:', error);
-                showError('Error processing file. Please check your data format. Make sure your Excel file has the required columns: Year, Week, Payer, EM Group, Charges, Collection, Payments, Visits, and Lab Visits.');
+                showError('Error processing file: ' + error.message);
                 document.getElementById('loadingSection').style.display = 'none';
                 document.querySelector('.header').style.display = 'block';
             }
         }
 
-        function readExcelFile(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
-                        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                        resolve(jsonData);
-                    } catch (error) {
-                        reject(error);
-                    }
-                };
-                reader.onerror = reject;
-                reader.readAsArrayBuffer(file);
-            });
-        }
-
-        function performAnalysis(rawData) {
-            return new Promise((resolve, reject) => {
-                try {
-                    if (typeof _ === 'undefined') {
-                        reject(new Error('Analysis library not available'));
-                        return;
-                    }
-
-                    var cleanedData = cleanData(rawData);
-                    if (cleanedData.length === 0) {
-                        reject(new Error('No valid data found in the file. Please check the data format.'));
-                        return;
-                    }
-
-                    var weeklyData = aggregateWeeklyData(cleanedData);
-                    var trainTestSplit = splitData(weeklyData, 0.8);
-                    var model = trainModel(trainTestSplit.train);
-                    var predictions = makePredictions(weeklyData, model);
-                    var results = classifyPerformance(weeklyData, predictions);
-                    var insights = generateInsights(results, weeklyData);
-                    
-                    resolve({ 
-                        weeklyData: weeklyData, 
-                        results: results, 
-                        insights: insights, 
-                        model: model 
-                    });
-                } catch (error) {
-                    reject(error);
-                }
-            });
-        }
-
-        function cleanData(rawData) {
-            var dataRows = rawData.slice(1);
-            var cleanedData = [];
-            var currentYear = null;
-            var currentWeek = null;
-            var currentPayer = null;
-            for (var i = 0; i < dataRows.length; i++) {
-                var row = dataRows[i];
-                // Fill down merged cells for Year (col 0), Week (col 1), and Payer (col 2)
-                if (row[0] && row[0] !== '') currentYear = row[0];
-                else row[0] = currentYear;
-                if (row[1] && row[1] !== '') currentWeek = row[1];
-                else row[1] = currentWeek;
-                if (row[2] && row[2] !== '') currentPayer = row[2];
-                else row[2] = currentPayer;
-                // Only process rows with all three filled, and EM Group present
-                if (!row[0] || !row[1] || !row[2] || !row[3]) continue;
-                cleanedData.push({
-                    year: row[0], // Year
-                    week: row[1], // Week
-                    payer: row[2], // Payer
-                    emGroup: row[3], // EM Group
-                    percentTotalPayments: parseFloat(row[4]) || 0, // % of Total Payments
-                    avgPaymentPerVisit: parseFloat(row[5]) || 0, // Avg. Payment Per Visit
-                    avgChartEMWeight: parseFloat(row[6]) || 0, // Avg. Chart E/M Weight
-                    charges: parseFloat(row[7]) || 0, // Charge Amount
-                    collection: parseFloat(String(row[8]).replace('%',''))/100 || 0, // Collection % as decimal
-                    payments: parseFloat(row[9]) || 0, // Total Payments
-                    visits: parseInt(row[10]) || 0, // Visit Count
-                    labVisits: parseInt(row[11]) || 0 // Visits With Lab Count
-                });
-            }
-            return cleanedData;
-        }
-
-        function aggregateWeeklyData(cleanedData) {
-            var grouped = _.groupBy(cleanedData, function(r) {
-                return r.year + '-' + r.week;
-            });
-            
-            var weeklyData = [];
-            for (var weekKey in grouped) {
-                if (grouped.hasOwnProperty(weekKey)) {
-                    var records = grouped[weekKey];
-                    var totalPayments = _.sumBy(records, 'payments');
-                    var totalCharges = _.sumBy(records, 'charges');
-                    var totalVisits = _.sumBy(records, 'visits');
-                    
-                    var bcbsRecords = [];
-                    var aetnaRecords = [];
-                    var selfPayRecords = [];
-                    
-                    for (var j = 0; j < records.length; j++) {
-                        if (records[j].payer === '2-BCBS') {
-                            bcbsRecords.push(records[j]);
-                        }
-                        if (records[j].payer === '17-AETNA') {
-                            aetnaRecords.push(records[j]);
-                        }
-                        if (records[j].payer === '1-SELF PAY') {
-                            selfPayRecords.push(records[j]);
-                        }
-                    }
-                    
-                    weeklyData.push({
-                        weekKey: weekKey,
-                        year: records[0].year,
-                        week: records[0].week,
-                        totalPayments: totalPayments,
-                        totalCharges: totalCharges,
-                        totalVisits: totalVisits,
-                        avgCollection: _.meanBy(records, 'collection'),
-                        bcbsCharges: _.sumBy(bcbsRecords, 'charges'),
-                        aetnaCharges: _.sumBy(aetnaRecords, 'charges'),
-                        selfPayCharges: _.sumBy(selfPayRecords, 'charges'),
-                        records: records
-                    });
-                }
-            }
-            
-            return weeklyData.sort(function(a, b) { 
-                return a.weekKey.localeCompare(b.weekKey); 
-            });
-        }
-
-        function splitData(data, trainRatio) {
-            var trainSize = Math.floor(data.length * trainRatio);
-            return {
-                train: data.slice(0, trainSize),
-                test: data.slice(trainSize)
-            };
-        }
-
-        function trainModel(trainData) {
-            var visitPayments = [];
-            for (var i = 0; i < trainData.length; i++) {
-                var w = trainData[i];
-                var paymentPerVisit = w.totalVisits > 0 ? w.totalPayments / w.totalVisits : 0;
-                visitPayments.push(paymentPerVisit);
-            }
-            var avgPaymentPerVisit = _.mean(visitPayments);
-            
-            var collectionRates = [];
-            for (var i = 0; i < trainData.length; i++) {
-                collectionRates.push(trainData[i].avgCollection);
-            }
-            var avgCollectionRate = _.mean(collectionRates);
-            
-            return {
-                avgPaymentPerVisit: avgPaymentPerVisit,
-                avgCollectionRate: avgCollectionRate,
-                type: 'visit-based'
-            };
-        }
-
-        function makePredictions(data, model) {
-            var predictions = [];
-            for (var i = 0; i < data.length; i++) {
-                var week = data[i];
-                var prediction;
-                if (model.type === 'visit-based') {
-                    prediction = week.totalVisits * model.avgPaymentPerVisit;
-                } else {
-                    prediction = week.totalCharges * model.avgCollectionRate;
-                }
-                predictions.push(prediction);
-            }
-            return predictions;
-        }
-
-        function classifyPerformance(weeklyData, predictions) {
-            var results = [];
-            
-            for (var i = 0; i < weeklyData.length; i++) {
-                var week = weeklyData[i];
-                var actual = week.totalPayments;
-                var predicted = predictions[i];
-                var error = actual > 0 ? (predicted - actual) / actual : 0;
-                
-                var performance;
-                if (error < -0.025) {
-                    performance = 'Under Performed';
-                } else if (error > 0.025) {
-                    performance = 'Over Performed';
-                } else {
-                    performance = 'Average Performance';
-                }
-                
-                var result = {
-                    weekKey: week.weekKey,
-                    year: week.year,
-                    week: week.week,
-                    totalPayments: week.totalPayments,
-                    totalCharges: week.totalCharges,
-                    totalVisits: week.totalVisits,
-                    avgCollection: week.avgCollection,
-                    bcbsCharges: week.bcbsCharges,
-                    aetnaCharges: week.aetnaCharges,
-                    selfPayCharges: week.selfPayCharges,
-                    records: week.records,
-                    predicted: predicted,
-                    actual: actual,
-                    error: error,
-                    performance: performance,
-                    absoluteError: Math.abs(actual - predicted)
-                };
-                
-                results.push(result);
-            }
-            
-            return results;
-        }
-
-        function generateInsights(results, weeklyData) {
-            var perfCounts = _.countBy(results, 'performance');
-            var avgError = _.meanBy(results, 'absoluteError');
-            var avgActual = _.meanBy(results, 'actual');
-            var accuracy = ((1 - avgError / avgActual) * 100).toFixed(1);
-            
-            var topDrivers = [
-                { name: 'Visit Volume', correlation: 0.967, importance: 'Primary' },
-                { name: 'Charge Amount', correlation: 0.950, importance: 'High' },
-                { name: 'Payer Mix', correlation: 0.65, importance: 'Medium' },
-                { name: 'Collection Rate', correlation: 0.34, importance: 'Medium' }
-            ];
-            
-            var underPerformed = [];
-            for (var i = 0; i < results.length; i++) {
-                if (results[i].performance === 'Under Performed') {
-                    underPerformed.push(results[i]);
-                }
-            }
-            
-            var avgVisits = _.meanBy(weeklyData, 'totalVisits');
-            var avgCharges = _.meanBy(weeklyData, 'totalCharges');
-            
-            var recommendations = {
-                immediate: [
-                    'Focus on visit volume - your primary revenue driver (' + avgVisits.toFixed(0) + ' visits per week average)',
-                    'Optimize charge capture - strong correlation with revenue (' + avgCharges.toFixed(0) + ' per week average)',
-                    'Review ' + underPerformed.length + ' under-performing weeks for process improvements'
-                ],
-                strategic: [
-                    'Implement visit-based revenue forecasting (95% accuracy)',
-                    'Prioritize BCBS and Aetna payer relationships',
-                    'Standardize collection processes from high-performing weeks'
-                ],
-                operational: [
-                    'Schedule optimization to increase patient volume',
-                    'Staff training on charge documentation accuracy',
-                    'Weekly performance monitoring dashboard implementation'
-                ]
-            };
-            
-            return {
-                performance: perfCounts,
-                accuracy: accuracy,
-                avgError: avgError,
-                avgActual: avgActual,
-                topDrivers: topDrivers,
-                recommendations: recommendations,
-                totalWeeks: results.length
-            };
-        }
-
-        function displayResults(analysis) {
-            analysisData = analysis;
-            weeklyResults = analysis.results;
-            
-            displayExecutiveSummary(analysis.insights);
-            displayPerformanceCharts(analysis.results);
-            displayRecommendations(analysis.insights.recommendations);
-            displayDetailsTable(analysis.results);
-            displayDriversAnalysis(analysis.insights.topDrivers);
+        function displayResults(insights) {
+            displayExecutiveSummary(insights);
+            displayPerformanceCharts(insights);
+            displayRecommendations(insights);
+            displayDetailsTable(insights);
+            displayDriversAnalysis(insights);
         }
 
         function displayExecutiveSummary(insights) {
+            const performance = insights.performance;
+            const totalWeeks = performance.length;
+            const underPerformed = performance.filter(p => p.Performance === 'Under Performed').length;
+            const avgError = performance.reduce((sum, p) => sum + p['Absolute Error'], 0) / totalWeeks;
+            const accuracy = ((1 - avgError / performance.reduce((sum, p) => sum + p.Actual, 0) / totalWeeks) * 100).toFixed(1);
+            
             var metricsHtml = 
                 '<div class="metric-card">' +
-                    '<div class="metric-value">' + insights.totalWeeks + '</div>' +
+                    '<div class="metric-value">' + totalWeeks + '</div>' +
                     '<div class="metric-label">Weeks Analyzed</div>' +
                 '</div>' +
                 '<div class="metric-card">' +
-                    '<div class="metric-value">' + insights.accuracy + '%</div>' +
+                    '<div class="metric-value">' + accuracy + '%</div>' +
                     '<div class="metric-label">Prediction Accuracy</div>' +
                 '</div>' +
                 '<div class="metric-card">' +
-                    '<div class="metric-value">$' + Math.round(insights.avgError).toLocaleString() + '</div>' +
+                    '<div class="metric-value">$' + Math.round(avgError).toLocaleString() + '</div>' +
                     '<div class="metric-label">Average Error</div>' +
                 '</div>' +
                 '<div class="metric-card">' +
-                    '<div class="metric-value">' + (insights.performance['Under Performed'] || 0) + '</div>' +
+                    '<div class="metric-value">' + underPerformed + '</div>' +
                     '<div class="metric-label">Weeks Need Attention</div>' +
                 '</div>';
             
             document.getElementById('keyMetrics').innerHTML = metricsHtml;
             
-            var keyInsight = '<strong>Key Insight:</strong> Your clinic revenue is ' + insights.accuracy + '% predictable. ' +
+            var keyInsight = '<strong>Key Insight:</strong> Your clinic revenue is ' + accuracy + '% predictable. ' +
                 'Visit volume is your primary driver - focus on scheduling optimization to address the ' +
-                (insights.performance['Under Performed'] || 0) + ' under-performing weeks.';
+                underPerformed + ' under-performing weeks.';
             
             document.getElementById('keyInsight').innerHTML = keyInsight;
         }
 
-        function displayPerformanceCharts(results) {
-            if (typeof Chart === 'undefined') {
-                console.warn('Chart.js not available');
-                return;
-            }
-
-            var perfCounts = _.countBy(results, 'performance');
-            var ctx1 = document.getElementById('performanceChart').getContext('2d');
+        function displayPerformanceCharts(insights) {
+            const performance = insights.performance;
+            
+            // Performance Distribution Chart
+            const perfCounts = _.countBy(performance, 'Performance');
+            const ctx1 = document.getElementById('performanceChart').getContext('2d');
             
             charts.performance = new Chart(ctx1, {
                 type: 'doughnut',
@@ -896,21 +633,22 @@
                 }
             });
             
-            var ctx2 = document.getElementById('trendChart').getContext('2d');
+            // Trend Chart
+            const ctx2 = document.getElementById('trendChart').getContext('2d');
             
             charts.trend = new Chart(ctx2, {
                 type: 'line',
                 data: {
-                    labels: results.map(function(r) { return r.week; }),
+                    labels: performance.map(p => p.Week),
                     datasets: [{
                         label: 'Actual Revenue',
-                        data: results.map(function(r) { return r.actual; }),
+                        data: performance.map(p => p.Actual),
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
                         tension: 0.4
                     }, {
                         label: 'Predicted Revenue',
-                        data: results.map(function(r) { return r.predicted; }),
+                        data: performance.map(p => p.Predicted),
                         borderColor: '#28a745',
                         backgroundColor: 'rgba(40, 167, 69, 0.1)',
                         borderDash: [5, 5],
@@ -940,7 +678,29 @@
             });
         }
 
-        function displayRecommendations(recommendations) {
+        function displayRecommendations(insights) {
+            const performance = insights.performance;
+            const underPerformed = performance.filter(p => p.Performance === 'Under Performed');
+            const avgVisits = performance.reduce((sum, p) => sum + p.Actual, 0) / performance.length;
+            
+            const recommendations = {
+                immediate: [
+                    'Focus on visit volume - your primary revenue driver (' + Math.round(avgVisits) + ' visits per week average)',
+                    'Optimize charge capture - strong correlation with revenue',
+                    'Review ' + underPerformed.length + ' under-performing weeks for process improvements'
+                ],
+                strategic: [
+                    'Implement visit-based revenue forecasting (95% accuracy)',
+                    'Prioritize BCBS and Aetna payer relationships',
+                    'Standardize collection processes from high-performing weeks'
+                ],
+                operational: [
+                    'Schedule optimization to increase patient volume',
+                    'Staff training on charge documentation accuracy',
+                    'Weekly performance monitoring dashboard implementation'
+                ]
+            };
+            
             var html = '';
             
             html += '<div class="action-card">' +
@@ -976,43 +736,22 @@
             document.getElementById('actionItems').innerHTML = html;
         }
 
-        function displayDetailsTable(results) {
-            function getPerformanceClass(performance) {
-                if (performance === 'Under Performed') return 'performance-under';
-                if (performance === 'Over Performed') return 'performance-over';
-                return 'performance-average';
-            }
-
-            function getKeyIssues(result) {
-                var issues = [];
-                if (result.totalVisits < 50) issues.push('Low visit volume');
-                if (result.avgCollection < 0.7) issues.push('Collection issues');
-                if (result.totalCharges > 0 && result.totalPayments / result.totalCharges < 0.5) issues.push('Charge capture');
-                return issues.length > 0 ? issues.join(', ') : 'None identified';
-            }
-
-            function getActionsNeeded(result) {
-                var actions = [];
-                if (result.performance === 'Under Performed') {
-                    actions.push('Investigate cause');
-                    if (result.totalVisits < 50) actions.push('Boost scheduling');
-                    if (result.avgCollection < 0.7) actions.push('Review collections');
-                }
-                return actions.length > 0 ? actions.join(', ') : 'Continue monitoring';
-            }
-
+        function displayDetailsTable(insights) {
+            const performance = insights.performance;
+            
             var tableRows = '';
-            for (var i = 0; i < results.length; i++) {
-                var result = results[i];
-                var performanceClass = getPerformanceClass(result.performance);
-                var errorPercent = (result.error * 100).toFixed(1);
+            for (var i = 0; i < performance.length; i++) {
+                var result = performance[i];
+                var performanceClass = result.Performance === 'Under Performed' ? 'performance-under' :
+                                     result.Performance === 'Over Performed' ? 'performance-over' :
+                                     'performance-average';
                 
                 tableRows += '<tr>' +
-                    '<td>' + result.week + '</td>' +
-                    '<td>' + result.actual.toLocaleString() + '</td>' +
-                    '<td>' + result.predicted.toLocaleString() + '</td>' +
-                    '<td>' + errorPercent + '%</td>' +
-                    '<td><span class="' + performanceClass + '">' + result.performance + '</span></td>' +
+                    '<td>' + result.Week + '</td>' +
+                    '<td>' + result.Actual.toLocaleString() + '</td>' +
+                    '<td>' + result.Predicted.toLocaleString() + '</td>' +
+                    '<td>' + result['Error %'] + '%</td>' +
+                    '<td><span class="' + performanceClass + '">' + result.Performance + '</span></td>' +
                     '<td>' + getKeyIssues(result) + '</td>' +
                     '<td>' + getActionsNeeded(result) + '</td>' +
                 '</tr>';
@@ -1034,21 +773,18 @@
             document.getElementById('detailsTable').innerHTML = html;
         }
 
-        function displayDriversAnalysis(topDrivers) {
-            if (typeof Chart === 'undefined') {
-                console.warn('Chart.js not available for drivers chart');
-                return;
-            }
-
-            var ctx = document.getElementById('driversChart').getContext('2d');
+        function displayDriversAnalysis(insights) {
+            const featureImportance = insights.feature_importance;
+            
+            const ctx = document.getElementById('driversChart').getContext('2d');
             
             charts.drivers = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: topDrivers.map(function(d) { return d.name; }),
+                    labels: featureImportance.slice(0, 4).map(f => f.Feature),
                     datasets: [{
-                        label: 'Correlation with Revenue',
-                        data: topDrivers.map(function(d) { return d.correlation; }),
+                        label: 'Feature Importance',
+                        data: featureImportance.slice(0, 4).map(f => f.Importance),
                         backgroundColor: ['#667eea', '#28a745', '#ffc107', '#dc3545'],
                         borderWidth: 0
                     }]
@@ -1079,14 +815,12 @@
             var insightsHtml = '<div style="padding: 20px; background: #f8f9fa; border-radius: 15px;">' +
                 '<h3 style="color: #2c3e50; margin-bottom: 15px;">Key Revenue Drivers</h3>';
             
-            for (var i = 0; i < topDrivers.length; i++) {
-                var driver = topDrivers[i];
+            featureImportance.slice(0, 4).forEach(feature => {
                 insightsHtml += '<div style="margin-bottom: 10px; padding: 10px; background: white; border-radius: 8px;">' +
-                    '<strong>' + driver.name + '</strong><br>' +
-                    '<span style="color: #666;">Correlation: ' + (driver.correlation * 100).toFixed(1) + '% | ' +
-                    'Importance: ' + driver.importance + '</span>' +
+                    '<strong>' + feature.Feature + '</strong><br>' +
+                    '<span style="color: #666;">Importance: ' + (feature.Importance * 100).toFixed(1) + '%</span>' +
                 '</div>';
-            }
+            });
             
             insightsHtml += '</div>';
             

@@ -1,16 +1,49 @@
-# Healthcare Revenue Performance Analyzer
+# Healthcare Revenue Performance Analysis
 
-Professional-grade analytics tool for healthcare clinic revenue optimization.
+This project analyzes healthcare revenue performance data using a Random Forest regression model to identify key performance factors and generate insights.
+
+## Setup
+
+1. Install the required dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+2. Place your input Excel file in the `public` folder:
+- Source file: `Weekly Performance Analsysis Export '24 & '24 W019.xlsx`
+
+## Running the Analysis
+
+Run the analysis script:
+```bash
+python analyze_revenue.py
+```
+
+The script will:
+1. Load and preprocess the data
+2. Train a Random Forest regression model
+3. Generate performance insights
+4. Create an output Excel file with the results
+
+## Output
+
+The analysis will generate `Revenue_Performance_Analysis_Results.xlsx` with two sheets:
+1. Performance Analysis: Contains weekly performance metrics and insights
+2. Feature Importance: Shows the relative importance of each factor in predicting revenue
 
 ## Features
 
-✅ **Drag & Drop File Upload** - Easy Excel file processing  
-✅ **Statistical Analysis** - Proper train/test methodology  
-✅ **Performance Classification** - Realistic weekly performance assessment  
-✅ **Visual Dashboards** - Interactive charts and graphs  
-✅ **Export Capabilities** - Excel, CSV, and image exports  
-✅ **Mobile Responsive** - Works on all devices  
-✅ **Professional UI** - Clean, clinic-owner focused interface  
+- Weekly performance analysis by payer and E/M code group
+- Performance diagnostics (Under Performed, Average Performance, Over Performed)
+- Detailed analysis for Aetna and BCBS performance
+- Identification of what went well and what could be improved
+- Feature importance analysis
+
+## Notes
+
+- The model uses a 2.5% threshold for performance classification
+- BCBS and Aetna are given special attention in the analysis
+- Lab visits are downweighted in the analysis as they contribute less to revenue
 
 ## Quick Deploy to Render
 
