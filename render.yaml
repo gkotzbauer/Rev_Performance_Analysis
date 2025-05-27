@@ -3,7 +3,10 @@ services:
     name: healthcare-revenue-analyzer
     env: python
     plan: starter
-    buildCommand: pip install -r requirements.txt
+    runtime: python
+    buildCommand: |
+      python -m pip install --upgrade pip
+      pip install -r requirements.txt
     startCommand: gunicorn server:app --workers 2 --threads 2 --timeout 120
     healthCheckPath: /health
     healthCheckTimeout: 300
