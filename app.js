@@ -7,6 +7,17 @@ const multer = require('multer');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Environment variables
+const UPLOAD_FOLDER = process.env.UPLOAD_FOLDER || 'uploads';
+const PUBLIC_FOLDER = process.env.PUBLIC_FOLDER || 'public';
+const MAX_CONTENT_LENGTH = parseInt(process.env.MAX_CONTENT_LENGTH) || 5 * 1024 * 1024; // 5MB default
+
+// Ensure upload directory exists
+const fs = require('fs');
+if (!fs.existsSync(UPLOAD_FOLDER)) {
+    fs.mkdirSync(UPLOAD_FOLDER, { recursive: true });
+}
+
 // Middleware
 app.use(helmet({
     contentSecurityPolicy: {
@@ -21,13 +32,13 @@ app.use(helmet({
 }));
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static(PUBLIC_FOLDER));
 
 // Configure multer for file uploads
 const upload = multer({
-    dest: 'uploads/',
+    dest: UPLOAD_FOLDER,
     limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB limit
+        fileSize: MAX_CONTENT_LENGTH
     }
 });
 
@@ -38,7 +49,7 @@ app.get('/health', (req, res) => {
 
 // Routes
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, PUBLIC_FOLDER, 'index.html'));
 });
 
 // File upload endpoint
@@ -64,4 +75,7 @@ app.use((err, req, res, next) => {
 // Start server
 app.listen(port, '0.0.0.0', () => {
     console.log(`Server running on port ${port}`);
+    console.log(`Upload folder: ${UPLOAD_FOLDER}`);
+    console.log(`Public folder: ${PUBLIC_FOLDER}`);
+    console.log(`Max file size: ${MAX_CONTENT_LENGTH} bytes`);
 }); 
