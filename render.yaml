@@ -1,15 +1,13 @@
 services:
   - type: web
-    name: healthcare-revenue-analyzer
-    env: python
-    plan: starter
-    runtime: python
-    buildCommand: |
-      python -m pip install --upgrade pip
-      pip install -r requirements.txt
-    startCommand: gunicorn server:app --workers 2 --threads 2 --timeout 120
-    healthCheckPath: /health
-    healthCheckTimeout: 300
+    name: rev-performance-analysis
+    env: node
+    buildCommand: npm install
+    startCommand: node app.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+    healthCheckPath: /
     autoDeploy: true
     disk:
       name: uploads
