@@ -41,3 +41,19 @@ logs/
 ~$*.xlsx
 ~$*.xls
 *.xlk
+
+# Python virtual environments
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python backend
+python_backend/
