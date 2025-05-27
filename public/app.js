@@ -1,35 +1,78 @@
+// Healthcare Revenue Performance Analyzer - Debug Version
+// Version: 2.0 - No undefined functions
+
+console.log('=== APP.JS LOADING ===');
+console.log('Timestamp:', new Date().toISOString());
+
 // Global variables
 let analysisData = null;
 let weeklyResults = null;
 let charts = {};
 
-// Initialize the app when the page loads
+// Debug: List all functions that will be defined
+console.log('Functions that will be defined:', [
+    'initializeApp',
+    'processFile', 
+    'displayResults',
+    'displayExecutiveSummary',
+    'displayPerformanceCharts',
+    'displayRecommendations',
+    'displayDetailsTable',
+    'displayDriversAnalysis',
+    'getKeyIssues',
+    'getActionsNeeded',
+    'showError',
+    'setupExportHandlers',
+    'exportToExcel',
+    'exportChart',
+    'exportTableData',
+    'checkInitialState'
+]);
+
+// Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, checking libraries...');
+    console.log('=== DOM CONTENT LOADED ===');
+    
+    // Check what functions exist globally
+    console.log('Global functions check:');
+    console.log('- handleFileUpload exists?', typeof window.handleFileUpload !== 'undefined');
+    console.log('- initializeApp exists?', typeof initializeApp !== 'undefined');
     
     // Function to check if libraries are loaded
     function checkLibraries() {
-        return typeof Chart !== 'undefined' && typeof _ !== 'undefined' && typeof XLSX !== 'undefined';
+        const hasChart = typeof Chart !== 'undefined';
+        const hasLodash = typeof _ !== 'undefined';
+        const hasXLSX = typeof XLSX !== 'undefined';
+        
+        console.log('Library check:', {
+            'Chart.js': hasChart,
+            'Lodash': hasLodash,
+            'XLSX': hasXLSX
+        });
+        
+        return hasChart && hasLodash && hasXLSX;
     }
     
-    // Wait for all external libraries to load with retry mechanism
+    // Wait for libraries with retry
     function initializeWhenReady(retries = 0) {
+        console.log(`Initialization attempt ${retries + 1}/10`);
+        
         if (checkLibraries()) {
-            console.log('All libraries loaded, initializing app...');
+            console.log('=== ALL LIBRARIES LOADED ===');
             try {
                 initializeApp();
                 setupExportHandlers();
                 checkInitialState();
+                console.log('=== INITIALIZATION COMPLETE ===');
             } catch (error) {
-                console.error('Error during initialization:', error);
-                showError('Failed to initialize application: ' + error.message);
+                console.error('=== INITIALIZATION ERROR ===', error);
+                showError('Failed to initialize: ' + error.message);
             }
         } else if (retries < 10) {
-            console.log(`Libraries not ready, retrying... (${retries + 1}/10)`);
             setTimeout(() => initializeWhenReady(retries + 1), 500);
         } else {
-            console.error('Libraries failed to load after 10 retries');
-            showError('Failed to load required libraries. Please refresh the page.');
+            console.error('=== LIBRARIES FAILED TO LOAD ===');
+            showError('Required libraries failed to load. Please refresh the page.');
         }
     }
     
@@ -37,25 +80,30 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeApp() {
-    console.log('Initializing app...');
+    console.log('=== INITIALIZING APP ===');
     
     try {
-        // Get DOM elements
+        // Get DOM elements with validation
         const uploadSection = document.getElementById('uploadSection');
         const fileInput = document.getElementById('fileInput');
 
+        console.log('DOM elements found:', {
+            uploadSection: !!uploadSection,
+            fileInput: !!fileInput
+        });
+
         if (!uploadSection) {
-            throw new Error('Upload section element not found');
+            throw new Error('Upload section not found');
         }
         
         if (!fileInput) {
-            throw new Error('File input element not found');
+            throw new Error('File input not found');
         }
 
-        // File upload click handler
+        // Upload section click handler
         uploadSection.addEventListener('click', function(e) {
-            e.preventDefault();
             console.log('Upload section clicked');
+            e.preventDefault();
             fileInput.click();
         });
 
@@ -64,7 +112,7 @@ function initializeApp() {
             console.log('File input changed');
             const files = event.target.files;
             if (files && files.length > 0) {
-                console.log('File selected:', files[0].name);
+                console.log('File selected:', files[0].name, 'Size:', files[0].size);
                 processFile(files[0]);
             }
         });
@@ -83,43 +131,52 @@ function initializeApp() {
         });
 
         uploadSection.addEventListener('drop', function(e) {
+            console.log('File dropped');
             e.preventDefault();
             e.stopPropagation();
             uploadSection.classList.remove('dragover');
             
             const files = e.dataTransfer.files;
             if (files && files.length > 0) {
-                console.log('File dropped:', files[0].name);
+                console.log('Dropped file:', files[0].name);
                 processFile(files[0]);
             }
         });
 
-        console.log('App initialized successfully');
+        console.log('=== APP INITIALIZED SUCCESSFULLY ===');
         
     } catch (error) {
-        console.error('Error initializing app:', error);
-        showError('Failed to initialize application: ' + error.message);
+        console.error('=== APP INITIALIZATION ERROR ===', error);
+        showError('Failed to initialize: ' + error.message);
     }
 }
 
 async function processFile(file) {
+    console.log('=== PROCESSING FILE ===', file.name);
+    
     const loadingSection = document.getElementById('loadingSection');
     const header = document.querySelector('.header');
     const analysisContainer = document.getElementById('analysisContainer');
 
     try {
-        if (loadingSection) loadingSection.hidden = false;
-        if (header) header.style.display = 'none';
-        if (analysisContainer) analysisContainer.style.display = 'none';
+        // Show loading state
+        if (loadingSection) {
+            loadingSection.style.display = 'block';
+        }
+        if (header) {
+            header.style.display = 'none';
+        }
+        if (analysisContainer) {
+            analysisContainer.style.display = 'none';
+        }
         
-        console.log('Processing file:', file.name);
-        
-        // Create FormData object
+        // Create form data
         const formData = new FormData();
         formData.append('file', file);
         
-        // Run Python analysis
         console.log('Sending file to server...');
+        
+        // Upload file
         const response = await fetch('/run_analysis', {
             method: 'POST',
             body: formData
@@ -129,43 +186,57 @@ async function processFile(file) {
         console.log('Server response:', responseData);
         
         if (!response.ok) {
-            console.error('Server error:', responseData);
-            throw new Error(responseData.error || 'Analysis failed');
+            throw new Error(responseData.error || 'Server error');
         }
         
-        console.log('Analysis complete, loading insights...');
-        // Load insights from JSON file
-        const insightsResponse = await fetch('/analysis_insights.json');
+        // Load analysis results
+        console.log('Loading analysis results...');
+        const insightsResponse = await fetch('/analysis_insights.json?v=' + Date.now());
+        
         if (!insightsResponse.ok) {
-            console.error('Failed to load insights:', insightsResponse.status);
-            throw new Error(`Failed to load analysis results: ${insightsResponse.statusText}`);
+            throw new Error('Failed to load analysis results');
         }
         
         const insights = await insightsResponse.json();
-        console.log('Insights loaded:', insights);
+        console.log('Analysis insights loaded:', insights);
         
-        // Validate insights data
         if (!insights || !insights.performance || !Array.isArray(insights.performance)) {
-            throw new Error('Invalid insights data structure');
+            throw new Error('Invalid analysis data structure');
         }
         
+        // Display results
         displayResults(insights);
         
-        if (loadingSection) loadingSection.hidden = true;
-        if (analysisContainer) analysisContainer.style.display = 'block';
+        // Show results
+        if (loadingSection) {
+            loadingSection.style.display = 'none';
+        }
+        if (analysisContainer) {
+            analysisContainer.style.display = 'block';
+        }
+        
+        console.log('=== FILE PROCESSING COMPLETE ===');
         
     } catch (error) {
-        console.error('Analysis error:', error);
-        showError(error.message || 'An unexpected error occurred. Please check the console for details.');
-        if (loadingSection) loadingSection.hidden = true;
-        if (header) header.style.display = 'block';
+        console.error('=== FILE PROCESSING ERROR ===', error);
+        showError(error.message);
+        
+        // Hide loading, show header
+        if (loadingSection) {
+            loadingSection.style.display = 'none';
+        }
+        if (header) {
+            header.style.display = 'block';
+        }
     }
 }
 
 function displayResults(insights) {
+    console.log('=== DISPLAYING RESULTS ===');
+    
     try {
         analysisData = insights;
-        weeklyResults = insights.performance; // Store for export functions
+        weeklyResults = insights.performance;
         
         displayExecutiveSummary(insights);
         displayPerformanceCharts(insights);
@@ -173,14 +244,16 @@ function displayResults(insights) {
         displayDetailsTable(insights);
         displayDriversAnalysis(insights);
         
-        console.log('Results displayed successfully');
+        console.log('=== RESULTS DISPLAYED SUCCESSFULLY ===');
     } catch (error) {
-        console.error('Error displaying results:', error);
+        console.error('=== DISPLAY RESULTS ERROR ===', error);
         showError('Failed to display results: ' + error.message);
     }
 }
 
 function displayExecutiveSummary(insights) {
+    console.log('Displaying executive summary...');
+    
     try {
         const performance = insights.performance;
         const totalWeeks = performance.length;
@@ -213,36 +286,41 @@ function displayExecutiveSummary(insights) {
         }
         
         const keyInsight = '<strong>Key Insight:</strong> Your clinic revenue is ' + accuracy + '% predictable. ' +
-            'Visit volume is your primary driver - focus on scheduling optimization to address the ' +
-            underPerformed + ' under-performing weeks.';
+            'Focus on optimization to address the ' + underPerformed + ' under-performing weeks.';
         
         const keyInsightElement = document.getElementById('keyInsight');
         if (keyInsightElement) {
             keyInsightElement.innerHTML = keyInsight;
         }
     } catch (error) {
-        console.error('Error displaying executive summary:', error);
+        console.error('Executive summary error:', error);
     }
 }
 
 function displayPerformanceCharts(insights) {
+    console.log('Creating performance charts...');
+    
     try {
-        if (typeof Chart === 'undefined' || typeof _ === 'undefined') {
-            console.error('Chart.js or Lodash not loaded');
-            return;
+        if (typeof Chart === 'undefined') {
+            throw new Error('Chart.js not loaded');
+        }
+        
+        if (typeof _ === 'undefined') {
+            throw new Error('Lodash not loaded');
         }
 
         const performance = insights.performance;
         
         // Performance Distribution Chart
         const perfCounts = _.countBy(performance, 'Performance');
+        console.log('Performance counts:', perfCounts);
+        
         const ctx1 = document.getElementById('performanceChart');
         if (!ctx1) {
-            console.error('Performance chart canvas not found');
-            return;
+            throw new Error('Performance chart canvas not found');
         }
         
-        // Destroy existing chart if it exists
+        // Destroy existing chart
         if (charts.performance) {
             charts.performance.destroy();
         }
@@ -275,11 +353,10 @@ function displayPerformanceCharts(insights) {
         // Trend Chart
         const ctx2 = document.getElementById('trendChart');
         if (!ctx2) {
-            console.error('Trend chart canvas not found');
-            return;
+            throw new Error('Trend chart canvas not found');
         }
         
-        // Destroy existing chart if it exists
+        // Destroy existing chart
         if (charts.trend) {
             charts.trend.destroy();
         }
@@ -327,12 +404,14 @@ function displayPerformanceCharts(insights) {
         
         console.log('Charts created successfully');
     } catch (error) {
-        console.error('Error creating charts:', error);
+        console.error('Chart creation error:', error);
         showError('Failed to create charts: ' + error.message);
     }
 }
 
 function displayRecommendations(insights) {
+    console.log('Displaying recommendations...');
+    
     try {
         const performance = insights.performance;
         const underPerformed = performance.filter(p => p.Performance === 'Under Performed');
@@ -342,17 +421,17 @@ function displayRecommendations(insights) {
             immediate: [
                 'Focus on revenue optimization - average weekly revenue is $' + Math.round(avgRevenue).toLocaleString(),
                 'Review charge capture processes to improve accuracy',
-                'Address ' + underPerformed.length + ' under-performing weeks for process improvements'
+                'Address ' + underPerformed.length + ' under-performing weeks'
             ],
             strategic: [
-                'Implement revenue-based forecasting for better planning',
+                'Implement revenue-based forecasting',
                 'Optimize payer mix and relationships',
-                'Standardize collection processes from high-performing periods'
+                'Standardize collection processes'
             ],
             operational: [
-                'Schedule optimization to increase patient volume',
-                'Staff training on charge documentation accuracy',
-                'Weekly performance monitoring dashboard implementation'
+                'Schedule optimization for patient volume',
+                'Staff training on documentation',
+                'Weekly performance monitoring'
             ]
         };
         
@@ -361,31 +440,25 @@ function displayRecommendations(insights) {
         html += '<div class="action-card">' +
             '<h3>🎯 Immediate Actions (Next 30 Days)</h3>' +
             '<ul class="action-list">';
-        
-        for (let i = 0; i < recommendations.immediate.length; i++) {
-            html += '<li>' + recommendations.immediate[i] + '</li>';
-        }
-        
+        recommendations.immediate.forEach(item => {
+            html += '<li>' + item + '</li>';
+        });
         html += '</ul></div>';
         
         html += '<div class="action-card">' +
             '<h3>🚀 Strategic Initiatives (90 Days)</h3>' +
             '<ul class="action-list">';
-        
-        for (let i = 0; i < recommendations.strategic.length; i++) {
-            html += '<li>' + recommendations.strategic[i] + '</li>';
-        }
-        
+        recommendations.strategic.forEach(item => {
+            html += '<li>' + item + '</li>';
+        });
         html += '</ul></div>';
         
         html += '<div class="action-card">' +
             '<h3>⚙️ Operational Improvements</h3>' +
             '<ul class="action-list">';
-        
-        for (let i = 0; i < recommendations.operational.length; i++) {
-            html += '<li>' + recommendations.operational[i] + '</li>';
-        }
-        
+        recommendations.operational.forEach(item => {
+            html += '<li>' + item + '</li>';
+        });
         html += '</ul></div>';
         
         const actionItemsElement = document.getElementById('actionItems');
@@ -393,17 +466,18 @@ function displayRecommendations(insights) {
             actionItemsElement.innerHTML = html;
         }
     } catch (error) {
-        console.error('Error displaying recommendations:', error);
+        console.error('Recommendations error:', error);
     }
 }
 
 function displayDetailsTable(insights) {
+    console.log('Displaying details table...');
+    
     try {
         const performance = insights.performance;
         
         let tableRows = '';
-        for (let i = 0; i < performance.length; i++) {
-            const result = performance[i];
+        performance.forEach(result => {
             const performanceClass = result.Performance === 'Under Performed' ? 'performance-under' :
                                  result.Performance === 'Over Performed' ? 'performance-over' :
                                  'performance-average';
@@ -417,7 +491,7 @@ function displayDetailsTable(insights) {
                 '<td>' + getKeyIssues(result) + '</td>' +
                 '<td>' + getActionsNeeded(result) + '</td>' +
             '</tr>';
-        }
+        });
 
         const html = '<thead>' +
             '<tr>' +
@@ -437,31 +511,31 @@ function displayDetailsTable(insights) {
             detailsTableElement.innerHTML = html;
         }
     } catch (error) {
-        console.error('Error displaying details table:', error);
+        console.error('Details table error:', error);
     }
 }
 
 function displayDriversAnalysis(insights) {
+    console.log('Displaying drivers analysis...');
+    
     try {
         if (typeof Chart === 'undefined') {
-            console.error('Chart.js not loaded');
-            return;
+            throw new Error('Chart.js not loaded');
         }
 
         const featureImportance = insights.feature_importance || [];
         
         if (featureImportance.length === 0) {
-            console.warn('No feature importance data available');
+            console.warn('No feature importance data');
             return;
         }
 
         const ctx = document.getElementById('driversChart');
         if (!ctx) {
-            console.error('Drivers chart canvas not found');
-            return;
+            throw new Error('Drivers chart canvas not found');
         }
         
-        // Destroy existing chart if it exists
+        // Destroy existing chart
         if (charts.drivers) {
             charts.drivers.destroy();
         }
@@ -519,11 +593,11 @@ function displayDriversAnalysis(insights) {
             driversInsightsElement.innerHTML = insightsHtml;
         }
     } catch (error) {
-        console.error('Error displaying drivers analysis:', error);
+        console.error('Drivers analysis error:', error);
     }
 }
 
-// Helper functions that were missing
+// Helper functions
 function getKeyIssues(result) {
     if (!result) return 'No data';
     
@@ -561,15 +635,15 @@ function getActionsNeeded(result) {
 }
 
 function showError(message) {
-    console.error('Error:', message);
+    console.error('=== ERROR ===', message);
     
-    // Remove any existing alerts
+    // Remove existing alerts
     const existingAlerts = document.querySelectorAll('.alert-danger');
     existingAlerts.forEach(alert => alert.remove());
     
     const alert = document.createElement('div');
     alert.className = 'alert alert-danger';
-    alert.innerHTML = `<strong>Error:</strong> ${message}`;
+    alert.innerHTML = '<strong>Error:</strong> ' + message;
     
     const header = document.querySelector('.header');
     if (header) {
@@ -583,81 +657,83 @@ function showError(message) {
 }
 
 function setupExportHandlers() {
-    console.log('Setting up export handlers...');
+    console.log('=== SETTING UP EXPORT HANDLERS ===');
     
     try {
-        const exportExcel = document.getElementById('exportExcel');
-        const exportPerformanceChart = document.getElementById('exportPerformanceChart');
-        const exportTrendChart = document.getElementById('exportTrendChart');
-        const exportTable = document.getElementById('exportTable');
+        const buttons = {
+            exportExcel: document.getElementById('exportExcel'),
+            exportPerformanceChart: document.getElementById('exportPerformanceChart'),
+            exportTrendChart: document.getElementById('exportTrendChart'),
+            exportTable: document.getElementById('exportTable')
+        };
 
-        if (exportExcel) {
-            exportExcel.addEventListener('click', function(e) {
+        console.log('Export buttons found:', Object.keys(buttons).map(key => ({ [key]: !!buttons[key] })));
+
+        if (buttons.exportExcel) {
+            buttons.exportExcel.addEventListener('click', function(e) {
                 e.preventDefault();
                 console.log('Export Excel clicked');
                 exportToExcel();
             });
         }
         
-        if (exportPerformanceChart) {
-            exportPerformanceChart.addEventListener('click', function(e) {
+        if (buttons.exportPerformanceChart) {
+            buttons.exportPerformanceChart.addEventListener('click', function(e) {
                 e.preventDefault();
                 console.log('Export Performance Chart clicked');
                 exportChart('performanceChart');
             });
         }
         
-        if (exportTrendChart) {
-            exportTrendChart.addEventListener('click', function(e) {
+        if (buttons.exportTrendChart) {
+            buttons.exportTrendChart.addEventListener('click', function(e) {
                 e.preventDefault();
                 console.log('Export Trend Chart clicked');
                 exportChart('trendChart');
             });
         }
         
-        if (exportTable) {
-            exportTable.addEventListener('click', function(e) {
+        if (buttons.exportTable) {
+            buttons.exportTable.addEventListener('click', function(e) {
                 e.preventDefault();
                 console.log('Export Table clicked');
                 exportTableData();
             });
         }
         
-        console.log('Export handlers set up successfully');
+        console.log('=== EXPORT HANDLERS SET UP ===');
         
     } catch (error) {
-        console.error('Error setting up export handlers:', error);
+        console.error('=== EXPORT HANDLERS ERROR ===', error);
     }
 }
 
 function exportToExcel() {
+    console.log('Exporting to Excel...');
+    
     if (!analysisData || typeof XLSX === 'undefined') {
-        showError('No data available for export or Excel library not loaded');
+        showError('No data available or Excel library not loaded');
         return;
     }
 
     try {
         const wb = XLSX.utils.book_new();
         
-        // Create summary sheet
         const performance = analysisData.performance;
         const totalWeeks = performance.length;
         const underPerformed = performance.filter(p => p.Performance === 'Under Performed').length;
-        const avgError = performance.reduce((sum, p) => sum + Math.abs(p['Absolute Error'] || 0), 0) / totalWeeks;
         
         const summaryData = [
             ['Healthcare Revenue Analysis Report'],
             ['Generated:', new Date().toLocaleDateString()],
             [''],
             ['Total Weeks Analyzed:', totalWeeks],
-            ['Under Performing Weeks:', underPerformed],
-            ['Average Error:', '$' + Math.round(avgError).toLocaleString()]
+            ['Under Performing Weeks:', underPerformed]
         ];
         
         const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
         XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
         
-        // Create details sheet
         const detailsData = [
             ['Week', 'Actual Revenue', 'Predicted Revenue', 'Error %', 'Performance']
         ];
@@ -677,13 +753,17 @@ function exportToExcel() {
         
         XLSX.writeFile(wb, 'Healthcare_Revenue_Analysis_Report.xlsx');
         
+        console.log('Excel export complete');
+        
     } catch (error) {
-        console.error('Export error:', error);
-        showError('Failed to export Excel file: ' + error.message);
+        console.error('Excel export error:', error);
+        showError('Failed to export Excel: ' + error.message);
     }
 }
 
 function exportChart(chartId) {
+    console.log('Exporting chart:', chartId);
+    
     const chartKey = chartId.replace('Chart', '');
     if (!charts[chartKey]) {
         showError('Chart not available for export');
@@ -699,6 +779,8 @@ function exportChart(chartId) {
         link.href = url;
         link.click();
         
+        console.log('Chart export complete');
+        
     } catch (error) {
         console.error('Chart export error:', error);
         showError('Failed to export chart: ' + error.message);
@@ -706,6 +788,8 @@ function exportChart(chartId) {
 }
 
 function exportTableData() {
+    console.log('Exporting table data...');
+    
     if (!weeklyResults) {
         showError('No data available for export');
         return;
@@ -731,36 +815,30 @@ function exportTableData() {
         link.setAttribute('download', 'revenue_analysis_data.csv');
         link.click();
         
+        console.log('Table export complete');
+        
     } catch (error) {
         console.error('Table export error:', error);
         showError('Failed to export table: ' + error.message);
     }
 }
 
-// Global error handler
-window.addEventListener('error', function(event) {
-    console.error('Global error:', event.error);
-    showError(`An unexpected error occurred: ${event.error?.message || 'Unknown error'}`);
-});
-
-window.addEventListener('unhandledrejection', function(event) {
-    console.error('Unhandled promise rejection:', event.reason);
-    showError(`Promise error: ${event.reason?.message || 'Unknown promise error'}`);
-    event.preventDefault();
-});
-
 async function checkInitialState() {
+    console.log('=== CHECKING INITIAL STATE ===');
+    
     try {
-        const response = await fetch('/analysis_insights.json');
+        const response = await fetch('/analysis_insights.json?v=' + Date.now());
         if (response.ok) {
             const insights = await response.json();
-            console.log('Found existing analysis, displaying results');
+            console.log('Found existing analysis, displaying...');
             displayResults(insights);
+            
             const analysisContainer = document.getElementById('analysisContainer');
+            const header = document.querySelector('.header');
+            
             if (analysisContainer) {
                 analysisContainer.style.display = 'block';
             }
-            const header = document.querySelector('.header');
             if (header) {
                 header.style.display = 'none';
             }
@@ -768,7 +846,20 @@ async function checkInitialState() {
             console.log('No previous analysis found');
         }
     } catch (error) {
-        console.log('No previous analysis found:', error.message);
-        // This is expected on first load, so don't show error to user
+        console.log('No previous analysis:', error.message);
     }
 }
+
+// Global error handlers
+window.addEventListener('error', function(event) {
+    console.error('=== GLOBAL ERROR ===', event.error);
+    showError('Unexpected error: ' + (event.error?.message || 'Unknown error'));
+});
+
+window.addEventListener('unhandledrejection', function(event) {
+    console.error('=== UNHANDLED PROMISE REJECTION ===', event.reason);
+    showError('Promise error: ' + (event.reason?.message || 'Unknown promise error'));
+    event.preventDefault();
+});
+
+console.log('=== APP.JS LOADED SUCCESSFULLY ===');
