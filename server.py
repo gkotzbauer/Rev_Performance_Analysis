@@ -14,18 +14,18 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__, static_folder='public')
+app = Flask(__name__, static_folder=os.getenv('PUBLIC_FOLDER', 'public'))
 CORS(app)  # Enable CORS for all routes
-app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config['UPLOAD_FOLDER'] = os.getenv('UPLOAD_FOLDER', 'uploads')
+app.config['MAX_CONTENT_LENGTH'] = int(os.getenv('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))  # 16MB max file size
 
 # Ensure required directories exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-os.makedirs('public', exist_ok=True)
+os.makedirs(app.static_folder, exist_ok=True)
 
 @app.route('/')
 def index():
-    return send_from_directory('public', 'index.html')
+    return send_from_directory(app.static_folder, 'index.html')
 
 @app.route('/health')
 def health_check():
@@ -81,7 +81,7 @@ def run_analysis():
             return jsonify({'error': f'Error generating insights: {str(e)}'}), 500
         
         # Save insights to JSON file
-        insights_path = os.path.join('public', 'analysis_insights.json')
+        insights_path = os.path.join(app.static_folder, 'analysis_insights.json')
         logger.info(f"Saving insights to: {insights_path}")
         try:
             with open(insights_path, 'w') as f:
