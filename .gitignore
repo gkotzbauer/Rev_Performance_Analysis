@@ -22,25 +22,6 @@ uploads/
 .DS_Store
 Thumbs.db
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-venv/
-ENV/
-env/
-.env
-.venv
-env.bak/
-venv.bak/
-
-# Build output
-dist/
-build/
-*.egg-info/
-
 # Logs
 logs/
 *.log
@@ -50,11 +31,6 @@ logs/
 .env.development.local
 .env.test.local
 .env.production.local
-
-# Coverage reports
-coverage/
-.coverage
-htmlcov/
 
 # Temporary files
 *.tmp
