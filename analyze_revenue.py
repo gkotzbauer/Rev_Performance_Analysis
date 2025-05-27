@@ -5,12 +5,26 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import seaborn as sns
-import shap
 import json
+import os
 
 def load_and_prepare_data(file_path):
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Input file not found: {file_path}")
+    
     # Load the Excel file
-    df = pd.read_excel(file_path)
+    try:
+        df = pd.read_excel(file_path)
+    except Exception as e:
+        raise ValueError(f"Error reading Excel file: {str(e)}")
+    
+    # Verify required columns exist
+    required_columns = ['Year', 'Week', 'Payer', 'EM Group', '% of Total Payments', 
+                       'Avg. Payment Per Visit', 'Avg. Chart E/M Weight', 'Charge Amount', 
+                       'Collection %', 'Total Payments', 'Visit Count', 'Visits With Lab Count']
+    missing_columns = [col for col in required_columns if col not in df.columns]
+    if missing_columns:
+        raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
     
     # Forward fill NaN values for Year and Week
     df['Year'] = df['Year'].ffill()
@@ -45,9 +59,15 @@ def load_and_prepare_data(file_path):
     return df_encoded, grouped
 
 def train_model(df_encoded):
+    if df_encoded.empty:
+        raise ValueError("No data available for training")
+    
     # Prepare features and target
     X = df_encoded.drop(['Total Payments', 'Year', 'Week'], axis=1)
     y = df_encoded['Total Payments']
+    
+    if len(X) < 2:
+        raise ValueError("Insufficient data for training (need at least 2 samples)")
     
     # Split the data
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -64,6 +84,9 @@ def train_model(df_encoded):
     return model, X_train_scaled, X_test_scaled, y_train, y_test, scaler, X.columns
 
 def generate_insights(model, df_encoded, original_df, scaler, feature_names):
+    if df_encoded.empty or original_df.empty:
+        raise ValueError("No data available for generating insights")
+    
     # Make predictions
     X = df_encoded.drop(['Total Payments', 'Year', 'Week'], axis=1)
     X_scaled = scaler.transform(X)
@@ -107,19 +130,19 @@ def generate_insights(model, df_encoded, original_df, scaler, feature_names):
         'feature_importance': importance.to_dict('records'),
         'payer_analysis': {
             'bcbs': {
-                'avg_payment': bcbs_data['Total Payments'].mean(),
-                'avg_visits': bcbs_data['Visit Count'].mean(),
-                'collection_rate': bcbs_data['Collection %'].mean()
+                'avg_payment': float(bcbs_data['Total Payments'].mean()),
+                'avg_visits': float(bcbs_data['Visit Count'].mean()),
+                'collection_rate': float(bcbs_data['Collection %'].mean())
             },
             'medicare': {
-                'avg_payment': medicare_data['Total Payments'].mean(),
-                'avg_visits': medicare_data['Visit Count'].mean(),
-                'collection_rate': medicare_data['Collection %'].mean()
+                'avg_payment': float(medicare_data['Total Payments'].mean()),
+                'avg_visits': float(medicare_data['Visit Count'].mean()),
+                'collection_rate': float(medicare_data['Collection %'].mean())
             },
             'self_pay': {
-                'avg_payment': self_pay_data['Total Payments'].mean(),
-                'avg_visits': self_pay_data['Visit Count'].mean(),
-                'collection_rate': self_pay_data['Collection %'].mean()
+                'avg_payment': float(self_pay_data['Total Payments'].mean()),
+                'avg_visits': float(self_pay_data['Visit Count'].mean()),
+                'collection_rate': float(self_pay_data['Collection %'].mean())
             }
         }
     }
@@ -127,27 +150,35 @@ def generate_insights(model, df_encoded, original_df, scaler, feature_names):
     return insights
 
 def main():
-    # File paths
-    input_file = "public/Weekly Performance Analsysis Export '24 & '24 W019.xlsx"
-    output_file = "public/Revenue_Performance_Analysis_Results.xlsx"
-    
-    # Load and prepare data
-    df_encoded, original_df = load_and_prepare_data(input_file)
-    
-    # Train model
-    model, X_train_scaled, X_test_scaled, y_train, y_test, scaler, feature_names = train_model(df_encoded)
-    
-    # Generate insights
-    insights = generate_insights(model, df_encoded, original_df, scaler, feature_names)
-    
-    # Save results to Excel
-    with pd.ExcelWriter(output_file) as writer:
-        pd.DataFrame(insights['performance']).to_excel(writer, sheet_name='Performance Analysis', index=False)
-        pd.DataFrame(insights['feature_importance']).to_excel(writer, sheet_name='Feature Importance', index=False)
-    
-    # Save insights as JSON for HTML interface
-    with open('public/analysis_insights.json', 'w') as f:
-        json.dump(insights, f)
+    try:
+        # File paths
+        input_file = "public/Weekly Performance Analsysis Export '24 & '24 W019.xlsx"
+        output_file = "public/Revenue_Performance_Analysis_Results.xlsx"
+        
+        # Ensure output directory exists
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        
+        # Load and prepare data
+        df_encoded, original_df = load_and_prepare_data(input_file)
+        
+        # Train model
+        model, X_train_scaled, X_test_scaled, y_train, y_test, scaler, feature_names = train_model(df_encoded)
+        
+        # Generate insights
+        insights = generate_insights(model, df_encoded, original_df, scaler, feature_names)
+        
+        # Save results to Excel
+        with pd.ExcelWriter(output_file) as writer:
+            pd.DataFrame(insights['performance']).to_excel(writer, sheet_name='Performance Analysis', index=False)
+            pd.DataFrame(insights['feature_importance']).to_excel(writer, sheet_name='Feature Importance', index=False)
+        
+        # Save insights as JSON for HTML interface
+        with open('public/analysis_insights.json', 'w') as f:
+            json.dump(insights, f)
+            
+    except Exception as e:
+        print(f"Error in main: {str(e)}")
+        raise
 
 if __name__ == "__main__":
     main() 

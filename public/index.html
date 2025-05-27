@@ -487,6 +487,7 @@
         window.onload = function() {
             initializeApp();
             setupExportHandlers();
+            checkInitialState();
         };
 
         function initializeApp() {
@@ -523,6 +524,7 @@
         async function processFile(file) {
             document.getElementById('loadingSection').style.display = 'block';
             document.querySelector('.header').style.display = 'none';
+            document.getElementById('analysisContainer').style.display = 'none';
             
             try {
                 console.log('Processing file:', file.name);
@@ -993,6 +995,21 @@
             console.error('Global error:', event.error);
             showError(`An unexpected error occurred: ${event.error?.message || 'Unknown error'}`);
         });
+
+        async function checkInitialState() {
+            try {
+                const response = await fetch('/analysis_insights.json');
+                if (response.ok) {
+                    const insights = await response.json();
+                    displayResults(insights);
+                    document.getElementById('analysisContainer').style.display = 'block';
+                } else {
+                    console.log('No previous analysis found');
+                }
+            } catch (error) {
+                console.log('No previous analysis found:', error);
+            }
+        }
     </script>
 </body>
 </html>
